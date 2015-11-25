@@ -1,8 +1,6 @@
 # A Gravity Journey
 # Ver 3
 
-# http://www.codeskulptor.org/#user40_G74oY4i58B_2.py
-
 # TODO
 # 1. Find sounds (...)
 # 2. Implement timer, penalty time for deaths
@@ -11,6 +9,7 @@
 # 5. Implement a ghost to chase the character (going through, easy chasing mechanism, but ghost animation is hard to find)
 # 6. Multiplayer (if there is time, which is unlikely)
 
+# http://www.codeskulptor.org/#user40_G74oY4i58B_3.py
 
 import simplegui
 import random
@@ -27,6 +26,7 @@ high_score = False
 
 background = simplegui.load_image("https://i.imgur.com/sdfuQ6n.jpg")
 tile = simplegui.load_image("https://i.imgur.com/3OWpBdz.png")
+#tile = simplegui.load_image("https://i.imgur.com/ruqTFnR.png")
 fire_trap = simplegui.load_image("https://i.imgur.com/NW1z3Jr.png")
 reverse_fire = simplegui.load_image("https://i.imgur.com/vHswhqV.png")
 character = simplegui.load_image("https://i.imgur.com/McszdaC.png")
@@ -263,11 +263,11 @@ class Character:
                         
     def reverse_gravity(self):
         if self.pos[1] > 40 and self.pos[1] < (600 - 40):
-            if self.check == 'Down':
+            if self.check == 'Down' and self.fly == False:
                 self.vel[1] = 0
                 self.check = 'Up'
             
-            elif self.check == 'Up':
+            elif self.check == 'Up' and self.fly == False:
                 self.vel[1] = 0
                 self.check = 'Down'
     
@@ -738,17 +738,17 @@ level1_matrix = ['WWWWWWWWWWW WWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWW
                  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW']
 
 # Stage 2
-level2_matrix = ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWWWWWWWWWWWWWW     WWW  WWW  WWWW  WWWW     WWWWWWWWWWWWWWWWW',
+level2_matrix = ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWWWWWWWWWWWWWWW    WWW  WWW  WWWW  WWWW     WWWWWWWWWWWWWWWWW',
                  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWW  WWWWWWW                                WWWWWWWWWWWWWWWWW',
                  'WWWWWWWWWWWWWWWW                   WW  WW  WW  WW W                                                               WWWWW',
                  'W             WW                                                          WWWWWWWWWWWWWWWWWWWWWWWWW               WWWWW',
-                 'W             WW                                                           RRRRR  RRRRRRRRRR RRRRRR    WWW        WWWWW',
+                 'W             WW                                                            RRRR  RRRRRR   R  RRR      WWW        WWWWW',
                  'W                        WWW                                WWW                                                   WWWWW',
                  'W                                                           W W                                                   WWWWW',
                  'W        WWW                                                W W                                                   WWWWW',
-                 'W                                   WW  WWW   W   WWW                      NNNNNNNNNNNNNNNNNNNNNNNN               WWWWW',
-                 'W       NNNNNN                                                             WWWWWWWWWWWWWWWWWWWWWWWW   TTTT        WWWWW',
-                 'WWWWWWWWWWWWWWWWWWWTTTTWWWWWWWWWW                    WWWWWW   WWWWWWWWW                               WWWW        WWWWW',
+                 'W                                   WW  WWW   W   WWW                                                             WWWWW',
+                 'W       NNNNNN                                                             NN   NN  NNNNNN  NN   NN   TTTT        WWWWW',
+                 'WWWWWWWWWWWWWWWWWWWTTTTWWWWWWWWWW                    WWWWWW   WWWWWWWWW    WWWWWWWWWWWWWWWWWWWWWWWW   WWWW        WWWWW',
                  'WWWWWWWW     WWWWWWWWWWWWWWW         W   W  W   W   W  WWWW     WWWWWWW                               WWWWWWWWWWWWWWWWW']
 
 
