@@ -1,6 +1,8 @@
 # A Gravity Journey
 # Ver 3
 
+# http://www.codeskulptor.org/#user40_G74oY4i58B_2.py
+
 # TODO
 # 1. Find sounds (...)
 # 2. Implement timer, penalty time for deaths
@@ -25,7 +27,6 @@ high_score = False
 
 background = simplegui.load_image("https://i.imgur.com/sdfuQ6n.jpg")
 tile = simplegui.load_image("https://i.imgur.com/3OWpBdz.png")
-#tile = simplegui.load_image("https://i.imgur.com/ruqTFnR.png")
 fire_trap = simplegui.load_image("https://i.imgur.com/NW1z3Jr.png")
 reverse_fire = simplegui.load_image("https://i.imgur.com/vHswhqV.png")
 character = simplegui.load_image("https://i.imgur.com/McszdaC.png")
@@ -38,6 +39,14 @@ instructions = simplegui.load_image("https://i.imgur.com/gTqFZwz.png")
 back_button = simplegui.load_image("https://i.imgur.com/yX0qR9m.png")
 hall_of_fame = simplegui.load_image("https://i.imgur.com/kHV9iIm.jpg")
 door = simplegui.load_image("https://i.imgur.com/LTDnVZQ.png")
+
+# Sounds
+
+foot_step = simplegui.load_sound("https://www.dropbox.com/s/a7r90i20iotauhn/234263__fewes__footsteps-wood.ogg?dl=1")
+gravity_change = simplegui.load_sound("https://www.dropbox.com/s/hlxiq7zifgyj5xu/204452__ludist__necro-winde.mp3?dl=1")
+ouch = simplegui.load_sound("https://www.dropbox.com/s/keqkj2q5wxred30/234039__11linda__pain-ouch.mp3?dl=1")
+coin_sound = simplegui.load_sound("https://www.dropbox.com/s/xvmjhgv8tq9hdw2/140382__d-w__coins-01.ogg?dl=1")
+door_opened = simplegui.load_sound("https://www.dropbox.com/s/0vrb1uxnoxxetfy/275184__lennyboy__dooropened.ogg?dl=1")
 
 # Distance 
 def dist(p,q):
@@ -139,7 +148,8 @@ class Character:
         return self.radius
                     
     def update(self):
-
+        #print camera.track
+        self.sound()
         self.pos[1] = self.pos[1] + self.vel[1]
         if self.pos[0] > 200 and self.pos[0] < 550:
             self.pos[0] = self.pos[0] + self.vel[0]
@@ -157,7 +167,7 @@ class Character:
             camera.pos[0] = camera.pos[0] + self.vel[0]
                 
         camera.track[0] = camera.track[0] + self.vel[0]
-        camera.track[1] = camera.track[1] + self.vel[1]
+        camera.track[1] = self.pos[1] 
         
         gravity_constant = 2.0 / 6.0
         
@@ -196,13 +206,13 @@ class Character:
                     self.pos[1] = (row+1) * 50 - self.draw_size[1]/2.0
                     self.fly = False
                     self.fly_track = 0
-                elif grid[row + 1][column_check1] == 'T' and (row + 1) * 50 - self.pos[1] <= self.draw_size[1]/2.0:
+                elif grid[row + 1][column_check1] == 'T' and (row + 1) * 50 - self.pos[1] <= (self.draw_size[1] - 20)/2.0:
                     self.reset()
-                elif grid[row + 1][column_check2] == 'T' and (row + 1) * 50 - self.pos[1] <= self.draw_size[1]/2.0:
+                elif grid[row + 1][column_check2] == 'T' and (row + 1) * 50 - self.pos[1] <= (self.draw_size[1] - 20)/2.0:
                     self.reset()
-                elif grid[row + 1][column_check1] == 'N' and (row + 1) * 50 - self.pos[1] <= self.draw_size[1]/2.0:
+                elif grid[row + 1][column_check1] == 'N' and (row + 1) * 50 - self.pos[1] <= (self.draw_size[1] - 10)/2.0:
                     self.reset()
-                elif grid[row + 1][column_check2] == 'N' and (row + 1) * 50 - self.pos[1] <= self.draw_size[1]/2.0:
+                elif grid[row + 1][column_check2] == 'N' and (row + 1) * 50 - self.pos[1] <= (self.draw_size[1] - 10)/2.0:
                     self.reset()
                 else:
                     self.vel[1] += gravity_constant
@@ -212,13 +222,15 @@ class Character:
                         self.vel[0] = 0
                     elif grid[row][column - 1] == 'W' and self.vel[0] < 0 and camera.track[0] - column * 50 <= self.draw_size[0]/2.0:
                         self.vel[0] = 0
-                    elif grid[row][column + 1] == 'T' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= self.draw_size[0]/2.0:
+                    elif grid[row][column + 1] == 'T' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= (self.draw_size[0] - 10)/2.0:
                         self.reset()
-                    elif grid[row][column - 1] == 'T' and self.vel[0] < 0 and camera.track[0] - column * 50 <= self.draw_size[0]/2.0:
+                    elif grid[row][column - 1] == 'T' and self.vel[0] < 0 and camera.track[0] - column * 50 <= (self.draw_size[0] - 10)/2.0:
                         self.reset()
-                    elif grid[row][column + 1] == 'N' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= self.draw_size[0]/2.0:
+                    elif grid[row][column + 1] == 'N' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= (self.draw_size[0] - 10)/2.0:
+                        ouch.play()
                         self.reset()
-                    elif grid[row][column - 1] == 'N' and self.vel[0] < 0 and camera.track[0] - column * 50 <= self.draw_size[0]/2.0:
+                    elif grid[row][column - 1] == 'N' and self.vel[0] < 0 and camera.track[0] - column * 50 <= (self.draw_size[0] - 10)/2.0:
+                        ouch.play()
                         self.reset()
                         
             elif self.check == 'Up':
@@ -232,9 +244,9 @@ class Character:
                     self.pos[1] = row * 50 + self.draw_size[1]/2.0
                     self.fly = False
                     self.fly_track = 0
-                elif grid[row - 1][column_check1] == 'R' and self.pos[1] - row * 50 <= self.draw_size[1]/2.0:
+                elif grid[row - 1][column_check1] == 'R' and self.pos[1] - row * 50 <= (self.draw_size[1] - 20)/2.0:
                     self.reset()
-                elif grid[row - 1][column_check2] == 'R' and self.pos[1] - row * 50 <= self.draw_size[1]/2.0:
+                elif grid[row - 1][column_check2] == 'R' and self.pos[1] - row * 50 <= (self.draw_size[1] - 20)/2.0:
                     self.reset()
                     
                 else:
@@ -244,19 +256,20 @@ class Character:
                         self.vel[0] = 0
                     elif grid[row][column - 1] == 'W' and self.vel[0] < 0 and camera.track[0] - column * 50 <= self.draw_size[0]/2.0:
                         self.vel[0] = 0
-                    elif grid[row][column - 1] == 'R' and self.vel[0] < 0 and camera.track[0] - column * 50 <= self.draw_size[0]/2.0:
+                    elif grid[row][column - 1] == 'R' and self.vel[0] < 0 and camera.track[0] - column * 50 <= (self.draw_size[0] - 10)/2.0:
                         self.reset()
-                    elif grid[row][column + 1] == 'R' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= self.draw_size[0]/2.0:
+                    elif grid[row][column + 1] == 'R' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= (self.draw_size[0] - 10)/2.0:
                         self.reset()
                         
     def reverse_gravity(self):
-        if self.check == 'Down':
-            self.vel[1] = 0
-            self.check = 'Up'
+        if self.pos[1] > 40 and self.pos[1] < (600 - 40):
+            if self.check == 'Down':
+                self.vel[1] = 0
+                self.check = 'Up'
             
-        elif self.check == 'Up':
-            self.vel[1] = 0
-            self.check = 'Down'
+            elif self.check == 'Up':
+                self.vel[1] = 0
+                self.check = 'Down'
     
     def move_right(self):
         self.vel[0] = 15.0/6.0
@@ -268,22 +281,43 @@ class Character:
         if key == simplegui.KEY_MAP['left']:
             self.move_left()
             self.walk_left = True
+            #foot_step.play()
+         
         elif key == simplegui.KEY_MAP['right']:
             self.move_right()
             self.walk_right = True
+            #foot_step.play()
+            
         if key == simplegui.KEY_MAP['space']:
             self.reverse_gravity()
             self.fly = True
+            gravity_change.play()
+            #foot_step.rewind()
     
     def keyup_handler(self, key):
         if key == simplegui.KEY_MAP['left']:
             self.vel[0] = 0
             self.walk_left = False
             self.walk_track = 0
+            #foot_step.rewind()
+            
         elif key == simplegui.KEY_MAP['right']:
             self.vel[0] = 0
             self.walk_right = False
             self.walk_track = 0
+            #foot_step.rewind()
+            
+    def sound(self):
+        if self.fly:
+            gravity_change.play()
+            foot_step.rewind()
+        else:
+            gravity_change.rewind()
+            if self.walk_left or self.walk_right:
+                foot_step.play()
+            else:
+                foot_step.rewind()
+        
     
     # Collision check, only used for monsters        
     def collide(self, other_object):
@@ -336,6 +370,8 @@ class Stage:
             coin.draw(canvas)
             if coin.collide():
                 self.coin_group.discard(coin)
+                coin_sound.rewind()
+                coin_sound.play()
                 char.coins += 1
         
         # Basically two timers for animation    
@@ -390,6 +426,7 @@ class Enemy:
     # Change the variables self.pos -> self.draw_pos, swap draw_size and size
     def draw(self, canvas):
         self.update()
+        
         if self.check == 'Down':
             if self.fly == True and self.walk_right == True:
                 self.walk_track = (self.walk_track + 2) % (7 * 2)
@@ -642,6 +679,7 @@ class Door:
         if self.collide():
             # Timer for 'door opening' animation
             # Only happens when the character are standing in front of the door
+            door_opened.play()
             self.count = (self.count + 1) % (3 * 10)
             canvas.draw_image(self.image, [32 + 4 * 64, 32 + (int)(self.count/10) * 64], self.image_size, 
                               self.draw_pos, self.draw_size)
