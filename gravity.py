@@ -9,7 +9,7 @@
 # 5. Implement a ghost to chase the character (going through, easy chasing mechanism, but ghost animation is hard to find)
 # 6. Multiplayer (if there is time, which is unlikely)
 
-# http://www.codeskulptor.org/#user40_G74oY4i58B_3.py
+# Last version : http://www.codeskulptor.org/#user40_G74oY4i58B_3.py
 
 import simplegui
 import random
@@ -29,8 +29,10 @@ tile = simplegui.load_image("https://i.imgur.com/3OWpBdz.png")
 #tile = simplegui.load_image("https://i.imgur.com/ruqTFnR.png")
 fire_trap = simplegui.load_image("https://i.imgur.com/NW1z3Jr.png")
 reverse_fire = simplegui.load_image("https://i.imgur.com/vHswhqV.png")
-character = simplegui.load_image("https://i.imgur.com/McszdaC.png")
-reverse_char = simplegui.load_image("https://i.imgur.com/LgPh9uF.png")
+#character = simplegui.load_image("https://i.imgur.com/McszdaC.png")
+character = simplegui.load_image("https://i.imgur.com/XaMlNCf.png")
+#reverse_char = simplegui.load_image("https://i.imgur.com/LgPh9uF.png")
+reverse_char = simplegui.load_image("https://i.imgur.com/jIePbKn.png")
 needle_trap = simplegui.load_image("https://i.imgur.com/qIO2WTx.png")
 needle_trap_2 = simplegui.load_image("https://i.imgur.com/NvHVydF.png")
 enemy_image = simplegui.load_image("https://i.imgur.com/sRswcw1.png")
@@ -39,8 +41,6 @@ instructions = simplegui.load_image("https://i.imgur.com/gTqFZwz.png")
 back_button = simplegui.load_image("https://i.imgur.com/yX0qR9m.png")
 hall_of_fame = simplegui.load_image("https://i.imgur.com/kHV9iIm.jpg")
 door = simplegui.load_image("https://i.imgur.com/LTDnVZQ.png")
-
-# Sounds
 
 foot_step = simplegui.load_sound("https://www.dropbox.com/s/a7r90i20iotauhn/234263__fewes__footsteps-wood.ogg?dl=1")
 gravity_change = simplegui.load_sound("https://www.dropbox.com/s/hlxiq7zifgyj5xu/204452__ludist__necro-winde.mp3?dl=1")
@@ -721,6 +721,49 @@ class Coin:
         canvas.draw_image(self.image, [16, 16 + (int)(self.count / 10) * 32], self.image_size, 
                           self.draw_pos, self.draw_size)
 
+# Fading blocks, disappear when character stands on them
+class Fadingblock:
+    def __init__(self, track, image):
+        self.track = track
+        self.image = image
+        self.image_size = [250, 250]
+        self.draw_pos = [0, 0]
+        self.fade_count = 0
+        self.draw_size = [50, 50]
+        self.horizontal = [self.track[0] - 25, self.track[0] + 25]
+        self.vertical = [self.track[1] - 25, self.track[1] + 25]
+        self.char_size = [50, 80]
+        
+    def update(self):
+        self.draw_pos[1] = self.track[1]
+        self.draw_pos[0] = self.track[0] - camera.pos[0]
+        
+    def collide(self):
+        left_check = camera.track[0] - self.char_size[0]/2.0 + 10
+        right_check = camera.track[0] + self.char_size[0]/2.0 - 10
+        up_check = camera.track[1] - self.char_size[1]/2.0
+        down_check = camera.track[1] + self.char_size[1]/2.0
+        if char.check == 'Down':
+            if left_check > self.horizontal[0] - self.char_size[0]/2.0 and right_check < self.horizontal[1] + self.char_size[0]/2.0:
+                if down_check > self.vertical[0] and up_check < self.vertical[0] - self.char_size[1] + 10:
+                    char.vel[1] = 0
+                    char.pos[1] = self.vertical[0] - self.char_size[1]/2.0
+                    char.fly = False
+                    char.fly_track = 0
+                    return True
+        elif char.check == 'Up':
+            if left_check > self.horizontal[0] - self.char_size[0]/2.0 and right_check < self.horizontal[1] + self.char_size[0]/2.0:
+                if up_check < self.vertical[1] and down_check > self.vertical[1] + self.char_size[1] - 10:
+                    char.vel[1] = 0
+                    char.pos[1] = self.vertical[1] + self.char_size[1] / 2.0
+                    char.fly = False
+                    char.fly_track = 0
+                    return True
+    def draw(self, canvas):
+        self.update()
+        canvas.draw_image(self.image, [125, 125], self.image_size, 
+                          self.draw_pos, self.draw_size)
+
 # Storing the matrix for each stage
 
 # Stage 1
@@ -799,6 +842,12 @@ menu = Menu()
 instruct = Instructions()
 hall = Hall_of_fame()
 
+block = Fadingblock([1500, 300], tile)
+block2 = Fadingblock([1550, 300], tile)
+block3 = Fadingblock([1600, 300], tile)
+block4 = Fadingblock([1650, 300], tile)
+block_group = set([block, block2, block3, block4])
+
 # Initialize the stages
 stage1 = Stage(level1_matrix, coin_group, goal_group, enemy_group)
 stage2 = Stage(level2_matrix, coin_group2, set(), enemy_group2)
@@ -839,7 +888,10 @@ def draw_handler(canvas):
 
         char.update()
         char.draw(canvas)
-    
+        for blockidx in block_group:
+            blockidx.draw(canvas)
+            if blockidx.collide():
+                block_group.discard(blockidx)
     
 # Get things rolling
 frame = simplegui.create_frame("Gravity", WIDTH, HEIGHT)
