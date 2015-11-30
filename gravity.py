@@ -4,12 +4,12 @@
 # TODO
 # 1. Find sounds (...)
 # 2. Implement timer, penalty time for deaths
-# 3. Implement other types of blocks and enemies (especially fading block for hidden areas)
+# 3. Implement other types of blocks and enemies (especially fading block for hidden areas) DONE
 # 4. Implement other types of obtainable objects (diamonds are easy, but bows and arrow,...)
-# 5. Implement a ghost to chase the character (going through, easy chasing mechanism, but ghost animation is hard to find)
+# 5. Implement a ghost to chase the character (going through, easy chasing mechanism, but ghost animation is hard to find) DONE
 # 6. Multiplayer (if there is time, which is unlikely)
 
-# Last version : http://www.codeskulptor.org/#user40_G74oY4i58B_3.py
+# CodeSkulptor link : http://www.codeskulptor.org/#user40_G74oY4i58B_4.py
 
 import simplegui
 import random
@@ -24,14 +24,16 @@ high_score = False
 
 # Images and sprite sheets 
 
+#character = simplegui.load_image("https://i.imgur.com/McszdaC.png")
+#reverse_char = simplegui.load_image("https://i.imgur.com/LgPh9uF.png")
+#tile = simplegui.load_image("https://i.imgur.com/ruqTFnR.png")
+#fire_trap = simplegui.load_image("https://i.imgur.com/NW1z3Jr.png")
+
 background = simplegui.load_image("https://i.imgur.com/sdfuQ6n.jpg")
 tile = simplegui.load_image("https://i.imgur.com/3OWpBdz.png")
-#tile = simplegui.load_image("https://i.imgur.com/ruqTFnR.png")
-fire_trap = simplegui.load_image("https://i.imgur.com/NW1z3Jr.png")
-reverse_fire = simplegui.load_image("https://i.imgur.com/vHswhqV.png")
-#character = simplegui.load_image("https://i.imgur.com/McszdaC.png")
+fire_trap = simplegui.load_image("http://i.imgur.com/XYMZwba.png")
+reverse_fire = simplegui.load_image("https://i.imgur.com/iBwpsgi.png")
 character = simplegui.load_image("https://i.imgur.com/XaMlNCf.png")
-#reverse_char = simplegui.load_image("https://i.imgur.com/LgPh9uF.png")
 reverse_char = simplegui.load_image("https://i.imgur.com/jIePbKn.png")
 needle_trap = simplegui.load_image("https://i.imgur.com/qIO2WTx.png")
 needle_trap_2 = simplegui.load_image("https://i.imgur.com/NvHVydF.png")
@@ -41,6 +43,10 @@ instructions = simplegui.load_image("https://i.imgur.com/gTqFZwz.png")
 back_button = simplegui.load_image("https://i.imgur.com/yX0qR9m.png")
 hall_of_fame = simplegui.load_image("https://i.imgur.com/kHV9iIm.jpg")
 door = simplegui.load_image("https://i.imgur.com/LTDnVZQ.png")
+#ghost_image = simplegui.load_image("https://i.imgur.com/7zA6sDL.png")
+#opposite_ghost = simplegui.load_image("https://i.imgur.com/abEF0nh.png")
+ghost_image = simplegui.load_image("https://i.imgur.com/dv9AV9m.png")
+explosion_image = simplegui.load_image("https://i.imgur.com/Ja5TmQw.png")
 
 foot_step = simplegui.load_sound("https://www.dropbox.com/s/a7r90i20iotauhn/234263__fewes__footsteps-wood.ogg?dl=1")
 gravity_change = simplegui.load_sound("https://www.dropbox.com/s/hlxiq7zifgyj5xu/204452__ludist__necro-winde.mp3?dl=1")
@@ -139,6 +145,7 @@ class Character:
         camera.track = [100, 460]
         self.vel = [0, 0]
         self.check = 'Down'
+        ghost.reset()
         # self.coins = 0 
         
     def get_position(self):
@@ -263,6 +270,7 @@ class Character:
                         
     def reverse_gravity(self):
         if self.pos[1] > 40 and self.pos[1] < (600 - 40):
+        # An attempt to solve the problem of pressing space in the last vertical grids. It fails. FIX!
             if self.check == 'Down' and self.fly == False:
                 self.vel[1] = 0
                 self.check = 'Up'
@@ -351,9 +359,21 @@ class Stage:
         self.level_info = level_matrix
         self.coin_count = 0
         self.needle_count = 0
+        self.flame_count = 0
+        
         self.enemy_group = enemy_group
         self.goal_group = goal_group
         self.coin_group = coin_group
+        self.block_group = set()
+        
+        for i in range(12):
+            for j in range(len(self.level_info[1])):
+                if self.level_info[i][j] == 'F':
+                    block = Fadingblock([25 + 50 * j, 25 + 50 * i], tile)
+                    self.block_group.add(block)
+                elif self.level_info[i][j] == 'C':
+                    new_coin = Coin([25 + 50 * j, 25 + 50 * i], coin_image, [16, 16], [32, 32])
+                    self.coin_group.add(new_coin)
         
     def draw(self, canvas):
         
@@ -374,25 +394,30 @@ class Stage:
                 coin_sound.play()
                 char.coins += 1
         
+        for blockidx in self.block_group:
+            blockidx.draw(canvas)
+            if blockidx.collide():
+                self.block_group.discard(blockidx)
+        
         # Basically two timers for animation    
         self.coin_count = (self.coin_count + 1) % (8 * 10)
         self.needle_count = (self.needle_count + 1) % (2 * 8)
+        self.flame_count = (self.flame_count + 1) % (7 * 13)
+        
         
         for i in range(12):
             for j in range(camera.left_bound, camera.right_bound +2):
                 if self.level_info[i][j] == 'W':
                     canvas.draw_image(tile, [125, 125], [250, 250], [camera.draw_pos[0]+ 50 * (j-camera.left_bound), 25 + 50 * i], [50, 50])                
                 elif self.level_info[i][j] == 'T':
-                    canvas.draw_image(fire_trap, [32, 32], [64, 64], [camera.draw_pos[0]+ 50 * (j-camera.left_bound), 25 + 50 * i], [50, 50])
+                    canvas.draw_image(fire_trap, [256/2 + (self.flame_count/7) * 256, 256/2], [256, 256], [camera.draw_pos[0]+ 50 * (j-camera.left_bound), 25 + 50 * i], [50, 50])
                 elif self.level_info[i][j] == 'R':
-                    canvas.draw_image(reverse_fire, [32, 32], [64, 64], [camera.draw_pos[0]+ 50 * (j-camera.left_bound), 25 + 50 * i], [50, 50])
+                    canvas.draw_image(reverse_fire, [256/2 + (self.flame_count/7) * 256, 256/2], [256, 256], [camera.draw_pos[0]+ 50 * (j-camera.left_bound), 25 + 50 * i], [50, 50])
                 elif self.level_info[i][j] == 'N':
                     if self.needle_count < 8:
                         canvas.draw_image(needle_trap, [369/2.0, 369/2.0], [369, 369], [camera.draw_pos[0]+ 50 * (j-camera.left_bound), 25 + 50 * i], [50, 50])
                     else:
                         canvas.draw_image(needle_trap_2, [369/2.0, 369/2.0], [369, 369], [camera.draw_pos[0]+ 50 * (j-camera.left_bound), 25 + 50 * i], [50, 50])
-                elif self.level_info[i][j] == 'C':
-                    canvas.draw_image(coin_image, [16, 16 + (self.coin_count / 10) * 32], [32, 32], [camera.draw_pos[0]+ 50 * (j-camera.left_bound), 25 + 50 * i], [40, 40])
                     
         # Report the number of coins earned
         canvas.draw_text('x '+str(char.coins), [50, 50], 40, 'Red')
@@ -739,60 +764,133 @@ class Fadingblock:
         self.draw_pos[0] = self.track[0] - camera.pos[0]
         
     def collide(self):
-        left_check = camera.track[0] - self.char_size[0]/2.0 + 10
-        right_check = camera.track[0] + self.char_size[0]/2.0 - 10
+        left_check = camera.track[0] - self.char_size[0]/2.0 
+        right_check = camera.track[0] + self.char_size[0]/2.0
+        
         up_check = camera.track[1] - self.char_size[1]/2.0
         down_check = camera.track[1] + self.char_size[1]/2.0
+        
         if char.check == 'Down':
-            if left_check > self.horizontal[0] - self.char_size[0]/2.0 and right_check < self.horizontal[1] + self.char_size[0]/2.0:
+            if left_check > self.horizontal[0] - self.char_size[0] + 5 and right_check < self.horizontal[1] + self.char_size[0] - 5:
                 if down_check > self.vertical[0] and up_check < self.vertical[0] - self.char_size[1] + 10:
                     char.vel[1] = 0
                     char.pos[1] = self.vertical[0] - self.char_size[1]/2.0
                     char.fly = False
                     char.fly_track = 0
                     return True
+                
+            if (up_check <= self.vertical[1] and down_check > self.vertical[1]) or (down_check > self.vertical[0] and up_check < self.vertical[0]):
+                if char.vel[0] < 0 and left_check <= self.horizontal[1] and right_check >= self.horizontal[1]:
+                    char.vel[0] = 0
+                elif char.vel[0] > 0 and right_check >= self.horizontal[0] and left_check <= self.horizontal[0]:
+                    char.vel[0] = 0
+                    
         elif char.check == 'Up':
-            if left_check > self.horizontal[0] - self.char_size[0]/2.0 and right_check < self.horizontal[1] + self.char_size[0]/2.0:
+            if left_check > self.horizontal[0] - self.char_size[0] + 5 and right_check < self.horizontal[1] + self.char_size[0] - 5:
                 if up_check < self.vertical[1] and down_check > self.vertical[1] + self.char_size[1] - 10:
                     char.vel[1] = 0
                     char.pos[1] = self.vertical[1] + self.char_size[1] / 2.0
                     char.fly = False
                     char.fly_track = 0
                     return True
+                
+            if (up_check <= self.vertical[1] and down_check > self.vertical[1]) or (down_check > self.vertical[0] and up_check < self.vertical[0]):
+                if char.vel[0] < 0 and left_check <= self.horizontal[1] and right_check >= self.horizontal[1]:
+                    char.vel[0] = 0
+                elif char.vel[0] > 0 and right_check >= self.horizontal[0] and left_check <= self.horizontal[0]:
+                    char.vel[0] = 0
+                
     def draw(self, canvas):
         self.update()
         canvas.draw_image(self.image, [125, 125], self.image_size, 
                           self.draw_pos, self.draw_size)
+
+# Chasing ghost    
+class Ghost:
+    def __init__(self, track, image, explosion_image):
+        self.track = track 
+        self.image = image
+        #self.opposite = oppimage
+        self.image_size = [64, 64]
+        self.draw_size = [80, 80]
+        # self.size = []
+        self.draw_pos = [0, 0]
+        self.degree = 0
+        self.count = 1
+        self.boom = False
+        self.expimg = explosion_image
+        
+    def reset(self):
+        self.track = [0, 0]
+        
+    def update(self):
+        self.degree = math.atan2((camera.track[0] - self.track[0]), (camera.track[1] - self.track[1]))
+        self.track[0] += 2 * math.sin(self.degree)
+        self.track[1] += 2 * math.cos(self.degree)
+        self.draw_pos[1] = self.track[1]
+        self.draw_pos[0] = self.track[0] - camera.pos[0]
+        # print self.draw_pos
+        
+    def collide(self):
+        if self.boom == False:
+            if dist(self.track, camera.track) <= 50:
+                return True
+            return False
+        else:
+            if dist(self.track, camera.track) <= 120:
+                return True
+            return False
+    
+    def draw(self, canvas):
+        self.update()
+        self.count = (self.count + 1) % (8 * 7 + 48 * 2 + 8 * 7)
+        if self.count < 8 * 7:
+            self.boom = False
+            if math.sin(self.degree) >= 0:
+                canvas.draw_image(self.image, [32 + 64 * (self.count / 8), 32 + 3 * 64], self.image_size, 
+                            self.draw_pos, self.draw_size)
+            else:
+                canvas.draw_image(self.image, [32 + 64 * (self.count/8), 32 + 1 * 64], self.image_size,
+                              self.draw_pos, self.draw_size)
+        elif self.count < 2 * 8 * 7:
+            self.boom = False
+            canvas.draw_image(self.image, [32 + 64 * ((self.count - 8 * 7)/8), 32 + 2 * 64], self.image_size,
+                              self.draw_pos, self.draw_size)
+        else:
+            if self.count > 2 * 8 * 7 + 15 * 2 and self.count < 2 * 8 * 7 + (48 - 10) * 2:
+                self.boom = True
+            canvas.draw_image(self.expimg, [256/2 + 256 * ((self.count - 2 * 8 * 7)/2), 256/2], [256, 256],
+                              self.draw_pos, [320, 320])
 
 # Storing the matrix for each stage
 
 # Stage 1
 level1_matrix = ['WWWWWWWWWWW WWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
                  'WWWWWWWWWWW WWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
-                 'W    W W               W W       RRR                          W WWWWWWWWWWWWWWWWWWWWWW',
+                 'W    W W     WWW       W W       RRR           CCCC           W WWWWWWWWWWWWWWWWWWWWWW',
                  'W                      WWW                                    W W            WWWWWWWWW',
                  'W                                                                            WWWWWWWWW',
                  'W                                                                            WWWWWWWWW',
                  'W                                                                            WWWWWWWWW',
                  'W                                                                            WWWWWWWWW',
-                 'W         WW                          W W                                    WWWWWWWWW',
-                 'W         WW      TTT        NNN      WWW                                    WWWWWWWWW',
+                 'W         WWW                         WCW                                    WWWWWWWWW',
+                 'W         WWW     TTT        NNN      WWW                                    WWWWWWWWW',
                  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
                  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW']
 
 # Stage 2
-level2_matrix = ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWWWWWWWWWWWWWWW    WWW  WWW  WWWW  WWWW     WWWWWWWWWWWWWWWWW',
-                 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWW  WWWWWWW                                WWWWWWWWWWWWWWWWW',
-                 'WWWWWWWWWWWWWWWW                   WW  WW  WW  WW W                                                               WWWWW',
-                 'W             WW                                                          WWWWWWWWWWWWWWWWWWWWWWWWW               WWWWW',
-                 'W             WW                                                            RRRR  RRRRRR   R  RRR      WWW        WWWWW',
-                 'W                        WWW                                WWW                                                   WWWWW',
-                 'W                                                           W W                                                   WWWWW',
-                 'W        WWW                                                W W                                                   WWWWW',
-                 'W                                   WW  WWW   W   WWW                                                             WWWWW',
-                 'W       NNNNNN                                                             NN   NN  NNNNNN  NN   NN   TTTT        WWWWW',
-                 'WWWWWWWWWWWWWWWWWWWTTTTWWWWWWWWWW                    WWWWWW   WWWWWWWWW    WWWWWWWWWWWWWWWWWWWWWWWW   WWWW        WWWWW',
-                 'WWWWWWWW     WWWWWWWWWWWWWWW         W   W  W   W   W  WWWW     WWWWWWW                               WWWWWWWWWWWWWWWWW']
+level2_matrix = ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWWWWWWWWWWWWWW       W    F    F   W     WWW  WWW  WWWW  WWWW    WWWWWWWWWWWWWWWWW',
+                 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWW  WWWWWWW    WW  WC  WWC WWC  WWC                             WWWWWWWWWWWWWWWWW',
+                 'WWWWWWWWWWWWWWWW                   WW  WW  WW  WW W                       CC      C       CC                                           WWWWW',
+                 'W             WW                                                                               WWWWWWWWWWWWWWWWWWWWWWWWW               WWWWW',
+                 'W             WW                                                                CCC              RRRR  RRRRRR   R  RRR      WWW        WWWWW',
+                 'W                        WWW                                WWW             WW  FFF  FF WW FF                                          WWWWW',
+                 'W                                                           W W                      CC CC                                             WWWWW',
+                 'W        WWW                                                W W                                                                        WWWWW',
+                 'W                                   WW  WWW   W   WWW                                                                                  WWWWW',
+                 'W       NNNNNN                                                                            CCC   NN   NN  NNNNNN  NN   NN   TTTT        WWWWW',
+                 'WWWWWWWWWWWWWWWWWWWTTTTWWWWWWWWWW                    WWWWWW   WWWWWWWWW WW   WW  CCW   W  FFF   WWWWWWWWWWWWWWWWWWWWWWWW   WWWW        WWWWW',
+                 'WWWWWWWW     WWWWWWWWWWWWWWW         W   W  W   W   W  WWWW     WWWWWWW          FFW    W                                  WWWWWWWWWWWWWWWWW']
 
 
 # Initialize character
@@ -836,17 +934,15 @@ goal_group = set([goal])
 # Goal for the second stage
 # Not done yet
 
+# Enemies and other objects are encoded directly into the level matrix at this point!
+
 # Other unique objects (unique as in only one)
 camera = Camera()
 menu = Menu()
 instruct = Instructions()
 hall = Hall_of_fame()
 
-block = Fadingblock([1500, 300], tile)
-block2 = Fadingblock([1550, 300], tile)
-block3 = Fadingblock([1600, 300], tile)
-block4 = Fadingblock([1650, 300], tile)
-block_group = set([block, block2, block3, block4])
+ghost = Ghost([0, 0], ghost_image, explosion_image)
 
 # Initialize the stages
 stage1 = Stage(level1_matrix, coin_group, goal_group, enemy_group)
@@ -888,10 +984,9 @@ def draw_handler(canvas):
 
         char.update()
         char.draw(canvas)
-        for blockidx in block_group:
-            blockidx.draw(canvas)
-            if blockidx.collide():
-                block_group.discard(blockidx)
+        ghost.draw(canvas)
+        if ghost.collide():
+            char.reset()
     
 # Get things rolling
 frame = simplegui.create_frame("Gravity", WIDTH, HEIGHT)
