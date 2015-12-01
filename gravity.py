@@ -5,7 +5,8 @@
 # 1. Find sounds (...)
 # 6. Multiplayer (if there is time, which is unlikely)
 
-# CodeSkulptor link : http://www.codeskulptor.org/#user40_VvZGYFVNF2_0.py
+# CodeSkulptor link : http://www.codeskulptor.org/#user40_VvZGYFVNF2_2.py
+
 
 import simplegui
 import random
@@ -853,10 +854,8 @@ class Ghost:
     def __init__(self, track, image, explosion_image):
         self.track = track 
         self.image = image
-        #self.opposite = oppimage
         self.image_size = [64, 64]
         self.draw_size = [80, 80]
-        # self.size = []
         self.draw_pos = [0, 0]
         self.degree = 0
         self.count = 1
@@ -868,11 +867,10 @@ class Ghost:
         
     def update(self):
         self.degree = math.atan2((camera.track[0] - self.track[0]), (camera.track[1] - self.track[1]))
-        self.track[0] += 2 * math.sin(self.degree)
-        self.track[1] += 2 * math.cos(self.degree)
+        self.track[0] += (2 + char.level) * math.sin(self.degree)
+        self.track[1] += (2 + char.level) * math.cos(self.degree)
         self.draw_pos[1] = self.track[1]
         self.draw_pos[0] = self.track[0] - camera.pos[0]
-        # print self.draw_pos
         
     def collide(self):
         if not self.boom:
@@ -895,12 +893,14 @@ class Ghost:
             else:
                 canvas.draw_image(self.image, [32 + 64 * (self.count/8), 32 + 1 * 64], self.image_size,
                               self.draw_pos, self.draw_size)
+                
         elif self.count < 2 * 8 * 7:
             self.boom = False
             explosion_sound.rewind()
             explosion_sound.play()
             canvas.draw_image(self.image, [32 + 64 * ((self.count - 8 * 7)/8), 32 + 2 * 64], self.image_size,
                               self.draw_pos, self.draw_size)
+            
         else:
             if self.count > 2 * 8 * 7 + 15 * 2 and self.count < 2 * 8 * 7 + (48 - 10) * 2:
                 self.boom = True
@@ -995,18 +995,18 @@ level1_matrix = ['WWWWWWWWWWW WWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWW
                  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW']
 
 # Stage 2
-level2_matrix = ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWWWWWWWWWWWWWW       F    F    F   W     WWW  WWW  WWWW  WWWW    WWWWWWWWWWWWWWWWW',
-                 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWW  WWWWWWW    WW  WC  WWC WWC  WWC                             WWWWWWWWWWWWWWWWW',
+level2_matrix = ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWWWWWWWWWWWWWW       F    F    F   W     WWW  FFW  WWWW  WWWW    WWWWWWWWWWWWWWWWW',
+                 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWW  WWWWWWW    WW  WC  WFC WWC  WWC                             WWWWWWWWWWWWWWWWW',
                  'WWWWWWWWWWWWWWWW                   WW  WW  WW  WW W                       CC      C       CC                                           WWWWW',
-                 'W             WW                                                                               WWWWWWWWWWWWWWWWWWWWWWWWW               WWWWW',
+                 'W             WW                                                                               WWWWWWFFWWWWWWWWWWWWWWWWW               WWWWW',
                  'W             WW                                                                CCC              RRRR  RRRRRR   R  RRR      WWW        WWWWW',
                  'W                        FFF                                WWW             WW  FFF  FF WW FF                                          WWWWW',
                  'W                                                           W W                      CC CC                                             WWWWW',
                  'W        WWW                                                W W                                                                        WWWWW',
                  'W                                   WWFFWWW  FWF  WWW                                                                                  WWWWW',
                  'W       NNNNNN                                                                            CCC   NN   NN  NNNNNN  NN   NN   TTTT        WWWWW',
-                 'WWWWWWWWWWWWWWWWWWWTTTTWWWWWWWWWW                    WWWWWW   WWWWWWWWW WW   WW  CCW   W  FFF   WWWWWWWWWWWWWWWWWWWWWWWW   WWWW        WWWWW',
-                 'WWWWWWWW     WWWWWWWWWWWWWWW         W   W  W   W   W  WWWW     WWWWWWW          FFW    W                                  WWWWWWWWWWWWWWWWW']
+                 'WWWWWWWWWWWWWWWWWWWTTTTWWWWWWWWWW                    WWWWWW   WWWWWFFWW WW   WW  CCW   W  FFF   WWWWWWWWWWWWWWWWWWWWWWWW   WWWW        WWWWW',
+                 'WWWWWWWW     WWWWWWWWWWWWWWW         W   W  W   W   W  WWWW     WWWFFWW          FFW    W                                  WWWWWWWWWWWWWWWWW']
 
 
 # Initialize character
@@ -1122,6 +1122,7 @@ frame.set_draw_handler(draw_handler)
 frame.set_keyup_handler(keyup_handler)
 frame.set_keydown_handler(keydown_handler)
 frame.set_mouseclick_handler(mouse_click)
-frame.start()
 button = frame.add_button('PAUSE', button_handler)
+frame.start()
+
 
