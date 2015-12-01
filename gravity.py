@@ -3,13 +3,9 @@
 
 # TODO
 # 1. Find sounds (...)
-# 2. Implement timer, penalty time for deaths
-# 3. Implement other types of blocks and enemies (especially fading block for hidden areas) DONE
-# 4. Implement other types of obtainable objects (diamonds are easy, but bows and arrow,...)
-# 5. Implement a ghost to chase the character (going through, easy chasing mechanism, but ghost animation is hard to find) DONE
 # 6. Multiplayer (if there is time, which is unlikely)
 
-# CodeSkulptor link : http://www.codeskulptor.org/#user40_G74oY4i58B_4.py
+# CodeSkulptor link : http://www.codeskulptor.org/#user40_VvZGYFVNF2_0.py
 
 import simplegui
 import random
@@ -21,6 +17,7 @@ HEIGHT = 600
 started = False
 howto = False
 high_score = False
+pause = False
 
 # Images and sprite sheets 
 
@@ -53,6 +50,7 @@ gravity_change = simplegui.load_sound("https://www.dropbox.com/s/hlxiq7zifgyj5xu
 ouch = simplegui.load_sound("https://www.dropbox.com/s/keqkj2q5wxred30/234039__11linda__pain-ouch.mp3?dl=1")
 coin_sound = simplegui.load_sound("https://www.dropbox.com/s/xvmjhgv8tq9hdw2/140382__d-w__coins-01.ogg?dl=1")
 door_opened = simplegui.load_sound("https://www.dropbox.com/s/0vrb1uxnoxxetfy/275184__lennyboy__dooropened.ogg?dl=1")
+explosion_sound = simplegui.load_sound("https://www.dropbox.com/s/yeptor14ief3l27/123235__dj-chronos__explosion-2.ogg?dl=1")
 
 # Distance 
 def dist(p,q):
@@ -79,6 +77,10 @@ class Character:
         self.fly_track = 0
         self.walk_track = 0
         self.coins = 0
+        self.lives = 5
+        self.points = 0
+        self.dead = False
+        self.dead_count = 0
         
         # The draw_size and size are swapped
         # Fix this afterward!
@@ -140,13 +142,18 @@ class Character:
                               self.size)
         
     def reset(self):
+        global pause
+        self.lives -= 1
         self.pos = [100, 460]
         camera.pos = [0, 0]
         camera.track = [100, 460]
         self.vel = [0, 0]
         self.check = 'Down'
         ghost.reset()
-        # self.coins = 0 
+        foot_step.rewind()
+        self.dead = False
+        self.fly = False
+        self.dead_count = 0
         
     def get_position(self):
         return self.pos
@@ -155,119 +162,139 @@ class Character:
         return self.radius
                     
     def update(self):
-        #print camera.track
-        self.sound()
-        self.pos[1] = self.pos[1] + self.vel[1]
-        if self.pos[0] > 200 and self.pos[0] < 550:
-            self.pos[0] = self.pos[0] + self.vel[0]
+        global started
+        if not self.dead:
+            if self.lives < 1:
+                started = False
+                self.lives = 5
+                self.level = 0
+                self.coins = 0
+                self.reset()
                 
-        elif self.pos[0] <= 550 and self.vel[0] > 0:
-            self.pos[0] = self.pos[0] + self.vel[0]
+            self.sound()
+            self.pos[1] = self.pos[1] + self.vel[1]
+            if self.pos[0] > 200 and self.pos[0] < 550:
+                self.pos[0] = self.pos[0] + self.vel[0]
                 
-        elif self.pos[0] >= 550 and self.vel[0] < 0:
-            self.pos[0] = self.pos[0] + self.vel[0]
+            elif self.pos[0] <= 550 and self.vel[0] > 0:
+                self.pos[0] = self.pos[0] + self.vel[0]
                 
-        elif self.pos[0] <= 550 and self.vel[0] < 0:
-            camera.pos[0] = camera.pos[0] + self.vel[0]
+            elif self.pos[0] >= 550 and self.vel[0] < 0:
+                self.pos[0] = self.pos[0] + self.vel[0]
                 
-        elif self.pos[0] >= 550 and self.vel[0] > 0:
-            camera.pos[0] = camera.pos[0] + self.vel[0]
+            elif self.pos[0] <= 550 and self.vel[0] < 0:
+                camera.pos[0] = camera.pos[0] + self.vel[0]
                 
-        camera.track[0] = camera.track[0] + self.vel[0]
-        camera.track[1] = self.pos[1] 
+            elif self.pos[0] >= 550 and self.vel[0] > 0:
+                camera.pos[0] = camera.pos[0] + self.vel[0]
+                
+            camera.track[0] = camera.track[0] + self.vel[0]
+            camera.track[1] = self.pos[1] 
         
-        gravity_constant = 2.0 / 6.0
+            gravity_constant = 2.0 / 6.0
         
-        # Remember to reimplement the horizontal collision like the vertical one
-        # (Using 2 row checks)
-        column = (int)(camera.track[0] / 50.0)
-        row = (int)(self.pos[1] / 50.0)
-        row_check1 = (int)( (self.pos[1] + self.draw_size[1] / 2 - 5) / 50.0 )
-        row_check2 = (int)( (self.pos[1] - self.draw_size[1] / 2 + 5) / 50.0 )
-        column_check1 = (int)( (camera.track[0] + self.draw_size[0]/2 - 10) / 50.0 )
-        column_check2 = (int)( (camera.track[0] - self.draw_size[0]/2 + 10) / 50.0 )
-        
-        # Check level
-        if self.level == 0:
-            grid = stage1.get_info()
-        elif self.level == 1:
-            grid = stage2.get_info()
-        elif self.level == 2:
-             grid = stage3.get_info()
-
-        # For some reason doesn't work if space is press when character in the last grid
-        if self.pos[1] < 0 or self.pos[1] > 600:
-            self.reset()
-        
-        # This row check is actually not necessary after implementing scroller
-        # Fix this after the game is finished, if time is available
-        if row > 0 and row < 11 and column > -1 and column_check2 > -1:
-            if self.check == 'Down':
-                if grid[row + 1][column_check1] == 'W' and (row + 1) * 50 - self.pos[1] <= self.draw_size[1]/2.0:
-                    self.vel[1] = 0
-                    self.pos[1] = (row+1) * 50 - self.draw_size[1]/2.0
-                    self.fly = False
-                    self.fly_track = 0
-                elif grid[row + 1][column_check2] == 'W' and (row + 1) * 50 - self.pos[1] <= self.draw_size[1]/2.0:
-                    self.vel[1] = 0
-                    self.pos[1] = (row+1) * 50 - self.draw_size[1]/2.0
-                    self.fly = False
-                    self.fly_track = 0
-                elif grid[row + 1][column_check1] == 'T' and (row + 1) * 50 - self.pos[1] <= (self.draw_size[1] - 20)/2.0:
-                    self.reset()
-                elif grid[row + 1][column_check2] == 'T' and (row + 1) * 50 - self.pos[1] <= (self.draw_size[1] - 20)/2.0:
-                    self.reset()
-                elif grid[row + 1][column_check1] == 'N' and (row + 1) * 50 - self.pos[1] <= (self.draw_size[1] - 10)/2.0:
-                    self.reset()
-                elif grid[row + 1][column_check2] == 'N' and (row + 1) * 50 - self.pos[1] <= (self.draw_size[1] - 10)/2.0:
-                    self.reset()
-                else:
-                    self.vel[1] += gravity_constant
-                
-                if column > 0:
-                    if grid[row][column + 1] == 'W' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= self.draw_size[0]/2.0:
-                        self.vel[0] = 0
-                    elif grid[row][column - 1] == 'W' and self.vel[0] < 0 and camera.track[0] - column * 50 <= self.draw_size[0]/2.0:
-                        self.vel[0] = 0
-                    elif grid[row][column + 1] == 'T' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= (self.draw_size[0] - 10)/2.0:
-                        self.reset()
-                    elif grid[row][column - 1] == 'T' and self.vel[0] < 0 and camera.track[0] - column * 50 <= (self.draw_size[0] - 10)/2.0:
-                        self.reset()
-                    elif grid[row][column + 1] == 'N' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= (self.draw_size[0] - 10)/2.0:
-                        ouch.play()
-                        self.reset()
-                    elif grid[row][column - 1] == 'N' and self.vel[0] < 0 and camera.track[0] - column * 50 <= (self.draw_size[0] - 10)/2.0:
-                        ouch.play()
-                        self.reset()
-                        
-            elif self.check == 'Up':
-                if grid[row- 1][column_check1] == 'W' and self.pos[1] - row * 50 <= self.draw_size[1]/2.0:
-                    self.vel[1] = 0
-                    self.pos[1] = row * 50 + self.draw_size[1]/2.0
-                    self.fly = False
-                    self.fly_track = 0
-                elif grid[row - 1][column_check2] == 'W' and self.pos[1] - row * 50 <= self.draw_size[1]/2.0:
-                    self.vel[1] = 0
-                    self.pos[1] = row * 50 + self.draw_size[1]/2.0
-                    self.fly = False
-                    self.fly_track = 0
-                elif grid[row - 1][column_check1] == 'R' and self.pos[1] - row * 50 <= (self.draw_size[1] - 20)/2.0:
-                    self.reset()
-                elif grid[row - 1][column_check2] == 'R' and self.pos[1] - row * 50 <= (self.draw_size[1] - 20)/2.0:
-                    self.reset()
+            # Remember to reimplement the horizontal collision like the vertical one
+            # (Using 2 row checks)
+            column = (int)(camera.track[0] / 50.0)
+            row = (int)(self.pos[1] / 50.0)
+            row_check1 = (int)( (self.pos[1] + self.draw_size[1] / 2 - 5) / 50.0 )
+            row_check2 = (int)( (self.pos[1] - self.draw_size[1] / 2 + 5) / 50.0 )
+            column_check1 = (int)( (camera.track[0] + self.draw_size[0]/2 - 10) / 50.0 )
+            column_check2 = (int)( (camera.track[0] - self.draw_size[0]/2 + 10) / 50.0 )
+            
+            # Check level
+            if self.level == 0:
+                grid = stage1.get_info()
+            elif self.level == 1:
+                grid = stage2.get_info()
+            elif self.level == 2:
+                 grid = stage3.get_info()
+    
+            # For some reason doesn't work if space is press when character in the last grid
+            if self.pos[1] < 0 or self.pos[1] > 600:
+                self.reset()
+            
+            # This row check is actually not necessary after implementing scroller
+            # Fix this after the game is finished, if time is available
+            if row > 0 and row < 11 and column > -1 and column_check2 > -1:
+                if self.check == 'Down':
+                    if grid[row + 1][column_check1] == 'W' and (row + 1) * 50 - self.pos[1] <= self.draw_size[1]/2.0:
+                        self.vel[1] = 0
+                        self.pos[1] = (row+1) * 50 - self.draw_size[1]/2.0
+                        self.fly = False
+                        self.fly_track = 0
+                    elif grid[row + 1][column_check2] == 'W' and (row + 1) * 50 - self.pos[1] <= self.draw_size[1]/2.0:
+                        self.vel[1] = 0
+                        self.pos[1] = (row+1) * 50 - self.draw_size[1]/2.0
+                        self.fly = False
+                        self.fly_track = 0
+                    elif grid[row + 1][column_check1] == 'T' and (row + 1) * 50 - self.pos[1] <= (self.draw_size[1] - 20)/2.0:
+                        self.dead = True
+                    elif grid[row + 1][column_check2] == 'T' and (row + 1) * 50 - self.pos[1] <= (self.draw_size[1] - 20)/2.0:
+                        self.dead = True
+                    elif grid[row + 1][column_check1] == 'N' and (row + 1) * 50 - self.pos[1] <= (self.draw_size[1] - 10)/2.0:
+                        self.dead = True
+                    elif grid[row + 1][column_check2] == 'N' and (row + 1) * 50 - self.pos[1] <= (self.draw_size[1] - 10)/2.0:
+                        self.dead = True
+                    else:
+                        self.vel[1] += gravity_constant
                     
-                else:
-                    self.vel[1] -= gravity_constant
-                if column > 0:
-                    if grid[row][column + 1] == 'W' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= self.draw_size[0]/2.0:
-                        self.vel[0] = 0
-                    elif grid[row][column - 1] == 'W' and self.vel[0] < 0 and camera.track[0] - column * 50 <= self.draw_size[0]/2.0:
-                        self.vel[0] = 0
-                    elif grid[row][column - 1] == 'R' and self.vel[0] < 0 and camera.track[0] - column * 50 <= (self.draw_size[0] - 10)/2.0:
-                        self.reset()
-                    elif grid[row][column + 1] == 'R' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= (self.draw_size[0] - 10)/2.0:
-                        self.reset()
+                    if column > 0:
+                        if grid[row][column + 1] == 'W' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= self.draw_size[0]/2.0:
+                            self.vel[0] = 0
+                        elif grid[row][column - 1] == 'W' and self.vel[0] < 0 and camera.track[0] - column * 50 <= self.draw_size[0]/2.0:
+                            self.vel[0] = 0
+                        elif grid[row][column + 1] == 'T' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= (self.draw_size[0] - 10)/2.0:
+                            self.dead = True
+                        elif grid[row][column - 1] == 'T' and self.vel[0] < 0 and camera.track[0] - column * 50 <= (self.draw_size[0] - 10)/2.0:
+                            self.dead = True
+                        elif grid[row][column + 1] == 'N' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= (self.draw_size[0] - 10)/2.0:
+                            ouch.play()
+                            self.dead = True
+                        elif grid[row][column - 1] == 'N' and self.vel[0] < 0 and camera.track[0] - column * 50 <= (self.draw_size[0] - 10)/2.0:
+                            ouch.play()
+                            self.dead = True
+                            
+                elif self.check == 'Up':
+                    if grid[row- 1][column_check1] == 'W' and self.pos[1] - row * 50 <= self.draw_size[1]/2.0:
+                        self.vel[1] = 0
+                        self.pos[1] = row * 50 + self.draw_size[1]/2.0
+                        self.fly = False
+                        self.fly_track = 0
+                    elif grid[row - 1][column_check2] == 'W' and self.pos[1] - row * 50 <= self.draw_size[1]/2.0:
+                        self.vel[1] = 0
+                        self.pos[1] = row * 50 + self.draw_size[1]/2.0
+                        self.fly = False
+                        self.fly_track = 0
+                    elif grid[row - 1][column_check1] == 'R' and self.pos[1] - row * 50 <= (self.draw_size[1] - 20)/2.0:
+                        self.dead = True
+                    elif grid[row - 1][column_check2] == 'R' and self.pos[1] - row * 50 <= (self.draw_size[1] - 20)/2.0:
+                        self.dead = True
                         
+                    else:
+                        self.vel[1] -= gravity_constant
+                    if column > 0:
+                        if grid[row][column + 1] == 'W' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= self.draw_size[0]/2.0:
+                            self.vel[0] = 0
+                        elif grid[row][column - 1] == 'W' and self.vel[0] < 0 and camera.track[0] - column * 50 <= self.draw_size[0]/2.0:
+                            self.vel[0] = 0
+                        elif grid[row][column - 1] == 'R' and self.vel[0] < 0 and camera.track[0] - column * 50 <= (self.draw_size[0] - 10)/2.0:
+                            self.dead = True
+                        elif grid[row][column + 1] == 'R' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= (self.draw_size[0] - 10)/2.0:
+                            self.dead = True
+        else:
+            self.check = 'Down'
+            self.fly = True
+            self.dead_count = self.dead_count + 1
+            if self.dead_count < 40:
+                self.pos[1] -= 6/6.0
+                self.pos[0] -= 2/6.0
+            else:
+                self.vel[1] += 2/6.0
+                self.pos[1] += self.vel[1]
+            if self.pos[1] > 600:
+                self.reset()
+                            
     def reverse_gravity(self):
         if self.pos[1] > 40 and self.pos[1] < (600 - 40):
         # An attempt to solve the problem of pressing space in the last vertical grids. It fails. FIX!
@@ -289,31 +316,26 @@ class Character:
         if key == simplegui.KEY_MAP['left']:
             self.move_left()
             self.walk_left = True
-            #foot_step.play()
          
         elif key == simplegui.KEY_MAP['right']:
             self.move_right()
             self.walk_right = True
-            #foot_step.play()
             
         if key == simplegui.KEY_MAP['space']:
             self.reverse_gravity()
             self.fly = True
             gravity_change.play()
-            #foot_step.rewind()
     
     def keyup_handler(self, key):
         if key == simplegui.KEY_MAP['left']:
             self.vel[0] = 0
             self.walk_left = False
             self.walk_track = 0
-            #foot_step.rewind()
             
         elif key == simplegui.KEY_MAP['right']:
             self.vel[0] = 0
             self.walk_right = False
             self.walk_track = 0
-            #foot_step.rewind()
             
     def sound(self):
         if self.fly:
@@ -332,7 +354,7 @@ class Character:
         
         if dist(camera.track, other_object.get_position()) <= 60:
             # print camera.track, other_object.get_position()
-            self.reset()
+            self.dead = True
             return True
         else:
             return False
@@ -422,6 +444,7 @@ class Stage:
         # Report the number of coins earned
         canvas.draw_text('x '+str(char.coins), [50, 50], 40, 'Red')
         canvas.draw_image(coin_image, [16, 16], [32, 32], [25, 40], [70, 70])
+        canvas.draw_text(str(char.lives), [700, 50], 40, 'Red')
         
     # Return the matrix, used by the Character class to check collision with blocks    
     def get_info(self):
@@ -699,6 +722,7 @@ class Door:
         return False
         
     def draw(self, canvas):
+        global pause
         self.update()
         
         if self.collide():
@@ -711,9 +735,11 @@ class Door:
             
             # Go to the next level after door is opened
             if self.count == 2 * 10 + 2:
-                char.reset()
-                char.coins = 0
-                char.level += 1
+                if char.level < 2:
+                    char.level += 1
+                    char.reset()
+                    char.lives += 1
+                    pause = False
                 self.count = 0
                 
         else:
@@ -748,7 +774,7 @@ class Coin:
 
 # Fading blocks, disappear when character stands on them
 class Fadingblock:
-    def __init__(self, track, image):
+    def __init__(self, track, image, block_type = 'Fading'):
         self.track = track
         self.image = image
         self.image_size = [250, 250]
@@ -758,10 +784,27 @@ class Fadingblock:
         self.horizontal = [self.track[0] - 25, self.track[0] + 25]
         self.vertical = [self.track[1] - 25, self.track[1] + 25]
         self.char_size = [50, 80]
+        self.block_type = block_type
+        self.move_counter = 0
+        self.vel = [0, 0]
+        
+    def move_left(self):
+        self.vel[0] = - 6/ 6.0
+    
+    def move_right(self):
+        self.vel[1] = 6/ 6.0
         
     def update(self):
         self.draw_pos[1] = self.track[1]
         self.draw_pos[0] = self.track[0] - camera.pos[0]
+        if self.block_type == 'Moving':
+            self.move_counter = (self.move_counter + 1) % 360
+            if self.move_counter < 180:
+                self.move_left()
+            else:
+                self.move_right()
+                
+        self.track[0] += self.vel[0]
         
     def collide(self):
         left_check = camera.track[0] - self.char_size[0]/2.0 
@@ -832,7 +875,7 @@ class Ghost:
         # print self.draw_pos
         
     def collide(self):
-        if self.boom == False:
+        if not self.boom:
             if dist(self.track, camera.track) <= 50:
                 return True
             return False
@@ -854,13 +897,86 @@ class Ghost:
                               self.draw_pos, self.draw_size)
         elif self.count < 2 * 8 * 7:
             self.boom = False
+            explosion_sound.rewind()
+            explosion_sound.play()
             canvas.draw_image(self.image, [32 + 64 * ((self.count - 8 * 7)/8), 32 + 2 * 64], self.image_size,
                               self.draw_pos, self.draw_size)
         else:
             if self.count > 2 * 8 * 7 + 15 * 2 and self.count < 2 * 8 * 7 + (48 - 10) * 2:
                 self.boom = True
+                
             canvas.draw_image(self.expimg, [256/2 + 256 * ((self.count - 2 * 8 * 7)/2), 256/2], [256, 256],
                               self.draw_pos, [320, 320])
+            
+class Pause:
+    def __init__(self):
+        self.splash_screen= ['                                ',
+                             'WWW WWW W  W WWW W W  W W W WWW ',
+                             'W   W W WW W  W  W WW W W W W   ',
+                             'W   W W W WW  W  W W WW W W WW  ',
+                             'W   W W W  W  W  W W  W W W W   ',
+                             'WWW WWW W  W  W  W W  W WWW WWW ',
+                             '                                ',
+                             '              WWW               ',
+                             '                W               ',
+                             '               WW               ',
+                             '               W                ',
+                             '                                ',
+                             '               W                ',
+                             '       WWWWWW       WWWWWW      ',
+                             '       W    W       W    W      ',
+                             '       W    W       W    W      ',
+                             '       W    W       W    W      ',
+                             '       W    W       W    W      ',
+                             '       WWWWWW       WWWWWW      ',
+                             '                                ',
+                             '     C C CC  CC     TT T TTT    ',
+                             '      C  C   C      T TT T T    ',
+                             '      C  CC CC      T  T TTT    ',
+                             '                                ']
+        
+        self.coin_count = 0
+        self.flame_count = 0
+        
+        self.yes_horizontal = [7 * 25, (7 + 6) * 25]
+        self.yes_vertical = [13 * 25, 19 * 25]
+        
+        self.no_horizontal = [20 * 25, 26 * 25]
+        self.no_vertical = [13 * 25, 19 * 25]
+        
+    def draw(self, canvas):
+        # Again, timers for animation 
+        self.coin_count = (self.coin_count + 1) % (8 * 10)
+        self.flame_count = (self.flame_count + 1) % (7 * 13)
+        
+        # Draw background
+        canvas.draw_image(background, [800, 600], [1600, 1200], [WIDTH/2, HEIGHT/2], [WIDTH, HEIGHT])
+        
+        # Mimic the draw method of Stage class
+        for i in range(24):
+            for j in range(31):
+                if self.splash_screen[i][j] == 'W':
+                    canvas.draw_image(tile, [125, 125], [250, 250], [12.5 + 25 * j, 12.5 + 25 * i], [25, 25])
+                elif self.splash_screen[i][j] == 'T':
+                    canvas.draw_image(fire_trap, [256/2 + (self.flame_count/7) * 256, 256/2], [256, 256], [12.5 + 25 * j, 12.5 + 25 * i], [25, 25])
+                elif self.splash_screen[i][j] == 'C':
+                    canvas.draw_image(coin_image, [16, 16 + (self.coin_count / 10) * 32], [32, 32], [12.5 + 25 * j, 12.5 + 25 * i], [38, 38])
+                    
+        canvas.draw_image(character, [32 + 2 * 64, 32 + 20 * 64], [64, 64], [10 * 25, 16 * 25], [80, 80])
+        canvas.draw_image(character, [32 + 5 * 64, 32 + 20 * 64], [64, 64], [23 * 25, 16 * 25], [80, 80])
+                    
+    def click(self, pos):
+        global started, pause
+        if pos[0] > self.yes_horizontal[0] and pos[0] < self.yes_horizontal[1]:
+            if pos[1] > self.yes_vertical[0] and pos[1] < self.yes_vertical[1]:
+                pause = False
+                
+        elif pos[0] > self.no_horizontal[0] and pos[0] < self.no_horizontal[1]:
+            if pos[1] > self.no_vertical[0] and pos[1] < self.no_vertical[1]:
+                pause = False
+                started = False
+                char.reset()
+                char.lives = 5
 
 # Storing the matrix for each stage
 
@@ -879,15 +995,15 @@ level1_matrix = ['WWWWWWWWWWW WWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWW
                  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW']
 
 # Stage 2
-level2_matrix = ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWWWWWWWWWWWWWW       W    F    F   W     WWW  WWW  WWWW  WWWW    WWWWWWWWWWWWWWWWW',
+level2_matrix = ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWWWWWWWWWWWWWW       F    F    F   W     WWW  WWW  WWWW  WWWW    WWWWWWWWWWWWWWWWW',
                  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWW  WWWWWWW    WW  WC  WWC WWC  WWC                             WWWWWWWWWWWWWWWWW',
                  'WWWWWWWWWWWWWWWW                   WW  WW  WW  WW W                       CC      C       CC                                           WWWWW',
                  'W             WW                                                                               WWWWWWWWWWWWWWWWWWWWWWWWW               WWWWW',
                  'W             WW                                                                CCC              RRRR  RRRRRR   R  RRR      WWW        WWWWW',
-                 'W                        WWW                                WWW             WW  FFF  FF WW FF                                          WWWWW',
+                 'W                        FFF                                WWW             WW  FFF  FF WW FF                                          WWWWW',
                  'W                                                           W W                      CC CC                                             WWWWW',
                  'W        WWW                                                W W                                                                        WWWWW',
-                 'W                                   WW  WWW   W   WWW                                                                                  WWWWW',
+                 'W                                   WWFFWWW  FWF  WWW                                                                                  WWWWW',
                  'W       NNNNNN                                                                            CCC   NN   NN  NNNNNN  NN   NN   TTTT        WWWWW',
                  'WWWWWWWWWWWWWWWWWWWTTTTWWWWWWWWWW                    WWWWWW   WWWWWWWWW WW   WW  CCW   W  FFF   WWWWWWWWWWWWWWWWWWWWWWWW   WWWW        WWWWW',
                  'WWWWWWWW     WWWWWWWWWWWWWWW         W   W  W   W   W  WWWW     WWWWWWW          FFW    W                                  WWWWWWWWWWWWWWWWW']
@@ -941,6 +1057,7 @@ camera = Camera()
 menu = Menu()
 instruct = Instructions()
 hall = Hall_of_fame()
+pause_menu = Pause()
 
 ghost = Ghost([0, 0], ghost_image, explosion_image)
 
@@ -960,6 +1077,14 @@ def mouse_click(pos):
         instruct.click(pos)
     elif started == False and high_score == True:
         hall.click(pos)
+    else:
+        if pause:
+            pause_menu.click(pos)
+            
+def button_handler():
+    global started, pause
+    if started == True and pause == False:
+        pause = True
     
 def draw_handler(canvas):
     global stage1, stage2
@@ -972,21 +1097,24 @@ def draw_handler(canvas):
             hall.draw(canvas)
         
     else:
-        camera.update()
-        if char.get_level() == 0:
-            stage1.draw(canvas)
-            
-        elif char.get_level() == 1:
-            stage2.draw(canvas)
-            
+        if pause:
+            pause_menu.draw(canvas)
         else:
-            stage3.draw(canvas)
+            camera.update()
+            if char.get_level() == 0:
+                stage1.draw(canvas)
+            
+            elif char.get_level() == 1:
+                stage2.draw(canvas)
+            
+            else:
+                stage3.draw(canvas)
 
-        char.update()
-        char.draw(canvas)
-        ghost.draw(canvas)
-        if ghost.collide():
-            char.reset()
+            char.update()
+            char.draw(canvas)
+            ghost.draw(canvas)
+            if ghost.collide():
+                char.dead = True
     
 # Get things rolling
 frame = simplegui.create_frame("Gravity", WIDTH, HEIGHT)
@@ -995,3 +1123,5 @@ frame.set_keyup_handler(keyup_handler)
 frame.set_keydown_handler(keydown_handler)
 frame.set_mouseclick_handler(mouse_click)
 frame.start()
+button = frame.add_button('PAUSE', button_handler)
+
