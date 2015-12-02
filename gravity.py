@@ -5,7 +5,7 @@
 # 1. Find sounds (...)
 # 6. Multiplayer (if there is time, which is unlikely)
 
-#CodeSkulptor link: http://www.codeskulptor.org/#user40_VvZGYFVNF2_5.py
+# CodeSkulptor link: http://www.codeskulptor.org/#user40_VvZGYFVNF2_6.py
 
 import simplegui
 import random
@@ -408,6 +408,7 @@ class Stage:
                     
     def reset(self):
         self.block_group = set()
+        self.coin_group = set()
         
         for i in range(12):
             for j in range(len(self.level_info[1])):
@@ -761,8 +762,10 @@ class Hall_of_fame:
         self.count = 0
         for key in self.names:
             self.count += 1
-            canvas.draw_text(str(self.count) + '. ' + key + '                  ' + str(self.names[key]), 
+            canvas.draw_text(str(self.count) + '. ' + key, 
                              [4 * 25, (14 + self.count) * 25], 20, 'Black', 'sans-serif') 
+            canvas.draw_text(str(self.names[key]), [20 * 25, (14 + self.count) * 25], 20, 
+                             'Black', 'sans-serif')
         
     def click(self, pos):
         global high_score
@@ -885,7 +888,7 @@ class Blocks:
         
         if char.check == 'Down':
             if left_check > self.horizontal[0] - self.char_size[0] + 5 and right_check < self.horizontal[1] + self.char_size[0] - 5:
-                if down_check >= self.vertical[0] and up_check < self.vertical[0] - self.char_size[1] + 10:
+                if down_check >= self.vertical[0] and up_check < self.vertical[0]:
                     char.vel[1] = 0
                     char.pos[1] = self.vertical[0] - self.char_size[1]/2.0
                     char.fly = False
@@ -901,7 +904,7 @@ class Blocks:
                     
         elif char.check == 'Up':
             if left_check > self.horizontal[0] - self.char_size[0] + 5 and right_check < self.horizontal[1] + self.char_size[0] - 5:
-                if up_check <= self.vertical[1] and down_check > self.vertical[1] + self.char_size[1] - 10:
+                if up_check <= self.vertical[1] and down_check > self.vertical[1]:
                     char.vel[1] = 0
                     char.pos[1] = self.vertical[1] + self.char_size[1] / 2.0
                     char.fly = False
@@ -1130,8 +1133,8 @@ level1_matrix = ['WWWWWWWWWWW WWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWW
                  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW']
 
 # Stage 2
-level2_matrix = ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWWWWWWWWWWWWWW       F    F    F   W     WWWW FFF  WFFF  WWWW    WWWWWWWWWWWWWWWWW',
-                 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWW  WWWWWWW    WW  WC  WFC WWC  WWC                CC           WWWWWWWWWWWWWWWWW',
+level2_matrix = ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWWWWWWWWWWWWWW       F    F    F   W     WWWW FFF  FFFF  WWWW    WWWWWWWWWWWWWWWWW',
+                 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWW  WWWWWWW    WW  WC  WWC WWC  WWC                CC           WWWWWWWWWWWWWWWWW',
                  'WWWWWWWWWWWWWWWW                   WW  WW  WW  WW W                       CC      C       CC       CCCCC                               WWWWW',
                  'W             WW                                                                               WWWWWWFFWWWWWWWWWFWWWWWWW               WWWWW',
                  'W             WW          C                                                     CCC              RRRR  RR  RR   R  RRR      WWW        WWWWW',
