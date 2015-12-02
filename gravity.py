@@ -1,12 +1,11 @@
 # A Gravity Journey
-# Ver 3
+# Ver 6
 
 # TODO
 # 1. Find sounds (...)
 # 6. Multiplayer (if there is time, which is unlikely)
 
-# CodeSkulptor link : http://www.codeskulptor.org/#user40_VvZGYFVNF2_2.py
-
+#CodeSkulptor link: http://www.codeskulptor.org/#user40_VvZGYFVNF2_5.py
 
 import simplegui
 import random
@@ -15,17 +14,16 @@ import math
 # Constant variables
 WIDTH = 800
 HEIGHT = 600
+
+# Flags
 started = False
 howto = False
 high_score = False
 pause = False
+end_game = False
+name_entered = False
 
 # Images and sprite sheets 
-
-#character = simplegui.load_image("https://i.imgur.com/McszdaC.png")
-#reverse_char = simplegui.load_image("https://i.imgur.com/LgPh9uF.png")
-#tile = simplegui.load_image("https://i.imgur.com/ruqTFnR.png")
-#fire_trap = simplegui.load_image("https://i.imgur.com/NW1z3Jr.png")
 
 background = simplegui.load_image("https://i.imgur.com/sdfuQ6n.jpg")
 tile = simplegui.load_image("https://i.imgur.com/3OWpBdz.png")
@@ -41,8 +39,6 @@ instructions = simplegui.load_image("https://i.imgur.com/gTqFZwz.png")
 back_button = simplegui.load_image("https://i.imgur.com/yX0qR9m.png")
 hall_of_fame = simplegui.load_image("https://i.imgur.com/kHV9iIm.jpg")
 door = simplegui.load_image("https://i.imgur.com/LTDnVZQ.png")
-#ghost_image = simplegui.load_image("https://i.imgur.com/7zA6sDL.png")
-#opposite_ghost = simplegui.load_image("https://i.imgur.com/abEF0nh.png")
 ghost_image = simplegui.load_image("https://i.imgur.com/dv9AV9m.png")
 explosion_image = simplegui.load_image("https://i.imgur.com/Ja5TmQw.png")
 
@@ -143,7 +139,6 @@ class Character:
                               self.size)
         
     def reset(self):
-        global pause
         self.lives -= 1
         self.pos = [100, 460]
         camera.pos = [0, 0]
@@ -163,14 +158,17 @@ class Character:
         return self.radius
                     
     def update(self):
-        global started
+        global started, end_game
         if not self.dead:
             if self.lives < 1:
-                started = False
-                self.lives = 5
                 self.level = 0
-                self.coins = 0
                 self.reset()
+                self.lives = 5
+                stage1.reset()
+                stage2.reset()
+                end_game = True
+                end.name = ""
+                # stage3.reset()
                 
             self.sound()
             self.pos[1] = self.pos[1] + self.vel[1]
@@ -283,13 +281,14 @@ class Character:
                             self.dead = True
                         elif grid[row][column + 1] == 'R' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= (self.draw_size[0] - 10)/2.0:
                             self.dead = True
+
         else:
             self.check = 'Down'
             self.fly = True
             self.dead_count = self.dead_count + 1
             if self.dead_count < 40:
-                self.pos[1] -= 6/6.0
-                self.pos[0] -= 2/6.0
+                self.pos[1] -= 7/6.0
+                self.pos[0] -= 5/6.0
             else:
                 self.vel[1] += 2/6.0
                 self.pos[1] += self.vel[1]
@@ -349,12 +348,9 @@ class Character:
             else:
                 foot_step.rewind()
         
-    
     # Collision check, only used for monsters        
     def collide(self, other_object):
-        
         if dist(camera.track, other_object.get_position()) <= 60:
-            # print camera.track, other_object.get_position()
             self.dead = True
             return True
         else:
@@ -392,35 +388,68 @@ class Stage:
         for i in range(12):
             for j in range(len(self.level_info[1])):
                 if self.level_info[i][j] == 'F':
-                    block = Fadingblock([25 + 50 * j, 25 + 50 * i], tile)
+                    block = Blocks([25 + 50 * j, 25 + 50 * i], tile)
                     self.block_group.add(block)
                 elif self.level_info[i][j] == 'C':
                     new_coin = Coin([25 + 50 * j, 25 + 50 * i], coin_image, [16, 16], [32, 32])
                     self.coin_group.add(new_coin)
+                elif self.level_info[i][j] == 'B':
+                    blink_block = Blocks([25 + 50 * j, 25 + 50 * i], tile, 'Blink')
+                    self.block_group.add(blink_block)
+                elif self.level_info[i][j] == 'M':
+                    moving_block = Blocks([25 + 50 * j, 25 + 50 * i], tile, 'Moving')
+                    self.block_group.add(moving_block)
+                elif self.level_info[i][j] == 'H':
+                    horizontal_enemy = Enemy([25 + 50 * j, 10 + 50 * i], enemy_image, [32, 32], [64, 64], 'horizontal')
+                    self.enemy_group.add(horizontal_enemy)
+                elif self.level_info[i][j] == 'V':
+                    vertical_enemy = Enemy([25 + 50 * j, 10 + 50 * i], enemy_image, [32, 32], [64, 64], 'vertical')
+                    self.enemy_group.add(vertical_enemy)
+                    
+    def reset(self):
+        self.block_group = set()
+        
+        for i in range(12):
+            for j in range(len(self.level_info[1])):
+                if self.level_info[i][j] == 'F':
+                    block = Blocks([25 + 50 * j, 25 + 50 * i], tile)
+                    self.block_group.add(block)
+                elif self.level_info[i][j] == 'C':
+                    new_coin = Coin([25 + 50 * j, 25 + 50 * i], coin_image, [16, 16], [32, 32])
+                    self.coin_group.add(new_coin)
+                elif self.level_info[i][j] == 'B':
+                    blink_block = Blocks([25 + 50 * j, 25 + 50 * i], tile, 'Blink')
+                    self.block_group.add(blink_block)
+                elif self.level_info[i][j] == 'M':
+                    moving_block = Blocks([25 + 50 * j, 25 + 50 * i], tile, 'Moving')
+                    self.block_group.add(moving_block)
         
     def draw(self, canvas):
         
         canvas.draw_image(background, [800, 600], [1600, 1200], [WIDTH/2, HEIGHT/2], [WIDTH, HEIGHT])
 
         for enemy in self.enemy_group:
-            enemy.draw(canvas)
-            char.collide(enemy)
+            if enemy.track[0] > camera.pos[0] and enemy.track[0] < camera.pos[0] + 900:
+                enemy.draw(canvas)
+                char.collide(enemy)
             
         for goal in self.goal_group:
             goal.draw(canvas)
             
         for coin in self.coin_group:
-            coin.draw(canvas)
-            if coin.collide():
-                self.coin_group.discard(coin)
-                coin_sound.rewind()
-                coin_sound.play()
-                char.coins += 1
+            if coin.track[0] > camera.pos[0] and coin.track[0] < camera.pos[0] + 900:
+                coin.draw(canvas)
+                if coin.collide():
+                    self.coin_group.discard(coin)
+                    coin_sound.rewind()
+                    coin_sound.play()
+                    char.coins += 1
         
         for blockidx in self.block_group:
-            blockidx.draw(canvas)
-            if blockidx.collide():
-                self.block_group.discard(blockidx)
+            if blockidx.track[0] > camera.pos[0] and blockidx.track[0] < camera.pos[0] + 900:
+                blockidx.draw(canvas)
+                if blockidx.collide():
+                    self.block_group.discard(blockidx)
         
         # Basically two timers for animation    
         self.coin_count = (self.coin_count + 1) % (8 * 10)
@@ -443,9 +472,10 @@ class Stage:
                         canvas.draw_image(needle_trap_2, [369/2.0, 369/2.0], [369, 369], [camera.draw_pos[0]+ 50 * (j-camera.left_bound), 25 + 50 * i], [50, 50])
                     
         # Report the number of coins earned
-        canvas.draw_text('x '+str(char.coins), [50, 50], 40, 'Red')
+        canvas.draw_text('x '+str(char.coins), [50, 50], 40, 'Red', 'sans-serif')
         canvas.draw_image(coin_image, [16, 16], [32, 32], [25, 40], [70, 70])
-        canvas.draw_text(str(char.lives), [700, 50], 40, 'Red')
+        canvas.draw_text('x '+str(char.lives), [700, 50], 40, 'Red', 'sans-serif')
+        canvas.draw_image(character, [32 + 64 * 2, 32 + 64 * 14], [64, 64], [675, 35], [80, 80]) 
         
     # Return the matrix, used by the Character class to check collision with blocks    
     def get_info(self):
@@ -453,7 +483,7 @@ class Stage:
     
 # Class for monsters
 class Enemy:
-    def __init__(self, track, image, center, size, height, move_type, gravity_check = 'Down'):
+    def __init__(self, track, image, center, size, move_type, gravity_check = 'Down'):
         self.track = track
         self.image = image
         self.image_size = size
@@ -461,7 +491,7 @@ class Enemy:
         self.check = gravity_check 
         self.size = [60, 80]
         self.draw_size = [80, 80]
-        self.draw_pos = [0, height]
+        self.draw_pos = [0, 0]
         self.vel = [0, 0]
         self.counter = 0
         self.move_type = move_type
@@ -500,30 +530,31 @@ class Enemy:
             else:
                 canvas.draw_image(self.image, self.image_center, self.image_size, self.draw_pos, 
                                     self.draw_size)
+                        
         elif self.check == 'Up':
             if self.fly == True and self.walk_right == True:
                 self.walk_track = (self.walk_track + 1) % (7 * 2)
                 canvas.draw_image(self.reverse_image, [32 + (int)(self.walk_track/2) * 64, 17 * 64 + 32], self.image_size,
-                                  self.pos, self.size)
+                                  self.draw_pos, self.draw_size)
             elif self.fly == True and self.walk_left == True:
                 self.walk_track = (self.walk_track + 1) % (7 * 2)
                 canvas.draw_image(self.reverse_image, [32 + (int)(self.walk_track/2) * 64, 19 * 64 + 32], self.image_size,
-                                  self.pos, self.size)
+                                  self.draw_pos, self.draw_size)
             elif self.fly == True:
                 self.fly_track = (self.fly_track + 1) % 7 
                 canvas.draw_image(self.reverse_image, [32 + (int)(self.fly_track) * 64, 18 * 64 + 32], self.image_size,
-                                  self.pos, self.size)
+                                  self.draw_pos, self.draw_size)
             elif self.walk_right == True:
                 self.walk_track = (self.walk_track + 1) % 45
                 canvas.draw_image(self.reverse_image, [32 + (int)(self.walk_track/5) * 64, 9 * 64 + 32], self.image_size,
-                                  self.pos, self.size)
+                                  self.draw_pos, self.draw_size)
             elif self.walk_left == True:
                 self.walk_track = (self.walk_track + 1) % 45
                 canvas.draw_image(self.reverse_image, [32 + (int)(self.walk_track/5) * 64, 11 * 64 + 32], self.image_size,
-                                  self.pos, self.size)
+                                  self.draw_pos, self.draw_size)
             else:
-                canvas.draw_image(self.reverse_image, self.image_center, self.image_size, self.pos, 
-                              self.size)
+                canvas.draw_image(self.reverse_image, self.image_center, self.image_size, self.draw_pos, 
+                              self.draw_size)
             
     
     def move_left(self):
@@ -648,6 +679,7 @@ class Menu:
             if pos[0] > self.start_button_horizontal[0] and pos[0] < self.start_button_horizontal[1]:
                 if pos[1] > self.start_button_vertical[0] and pos[1] < self.start_button_vertical[1]:
                     started = True
+                    char.coins = 0
             
             if pos[0] > self.howto_button_horizontal[0] and pos[0] < self.howto_button_horizontal[1]:
                 if pos[1] > self.howto_button_vertical[0] and pos[1] < self.howto_button_vertical[1]:
@@ -682,25 +714,61 @@ class Instructions:
 # High score                
 class Hall_of_fame:
     def __init__(self):
+        self.splash_screen= ['                                ',
+                             '                                ',
+                             ' W W WWW W   W    WWW WWW       ',
+                             ' W W W W W   W    W W W         ',
+                             ' WWW WWW W   W    W W WWW       ',
+                             ' W W W W W   W    W W W         ',
+                             ' W W W W WWW WWW  WWW W         ',
+                             '                                ',
+                             '           WWW WWW W   W WWW    ',
+                             '           W   W W WW WW W      ',
+                             '           WWW WWW W W W WW     ',
+                             '           W   W W W   W W      ',
+                             '           W   W W W   W WWW    ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ']
 
+        self.names = {}
+        
         self.button_horizontal = [650, 650 + 113]
         self.button_vertical = [25, 25 + 83]
         self.button_pos = [(self.button_horizontal[0] + self.button_horizontal[1]) / 2.0,
                            (self.button_vertical[0] + self.button_vertical[1]) / 2.0]
         self.button_width = self.button_horizontal[1] - self.button_horizontal[0]
         self.button_height = self.button_vertical[1] - self.button_vertical[0]
+        self.count = 1
         
     def draw(self, canvas):
-        canvas.draw_image(hall_of_fame, [2133/2.0, 600], [2133, 1200], [WIDTH/2, HEIGHT/2], [WIDTH, HEIGHT])
+        canvas.draw_image(background, [800, 600], [1600, 1200], [WIDTH/2, HEIGHT/2], [WIDTH, HEIGHT])
         canvas.draw_image(back_button, [113/2.0, 83/2.0], [113, 83], self.button_pos, 
                           [self.button_width, self.button_height])
+        for i in range(24):
+            for j in range(31):
+                if self.splash_screen[i][j] == 'W':
+                    canvas.draw_image(tile, [125, 125], [250, 250], [12.5 + 25 * j, 12.5 + 25 * i], [25, 25])
+                    
+        self.count = 0
+        for key in self.names:
+            self.count += 1
+            canvas.draw_text(str(self.count) + '. ' + key + '                  ' + str(self.names[key]), 
+                             [4 * 25, (14 + self.count) * 25], 20, 'Black', 'sans-serif') 
         
     def click(self, pos):
         global high_score
         if pos[0] > self.button_horizontal[0] and pos[0] < self.button_horizontal[1]:
             if pos[1] > self.button_vertical[0] and pos[1] < self.button_vertical[1]:
                 high_score = False
-                
 
 # The goal of each stage
 class Door:
@@ -773,8 +841,8 @@ class Coin:
         canvas.draw_image(self.image, [16, 16 + (int)(self.count / 10) * 32], self.image_size, 
                           self.draw_pos, self.draw_size)
 
-# Fading blocks, disappear when character stands on them
-class Fadingblock:
+# Class for fading blocks, moving blocks, blinking blocks
+class Blocks:
     def __init__(self, track, image, block_type = 'Fading'):
         self.track = track
         self.image = image
@@ -793,19 +861,20 @@ class Fadingblock:
         self.vel[0] = - 6/ 6.0
     
     def move_right(self):
-        self.vel[1] = 6/ 6.0
+        self.vel[0] = 6/ 6.0
         
     def update(self):
         self.draw_pos[1] = self.track[1]
         self.draw_pos[0] = self.track[0] - camera.pos[0]
         if self.block_type == 'Moving':
-            self.move_counter = (self.move_counter + 1) % 360
-            if self.move_counter < 180:
+            self.move_counter = (self.move_counter + 1) % 160
+            if self.move_counter < 80:
                 self.move_left()
             else:
                 self.move_right()
-                
-        self.track[0] += self.vel[0]
+            self.track[0] += self.vel[0]
+            self.horizontal = [self.track[0] - 25, self.track[0] + 25]
+            self.vertical = [self.track[1] - 25, self.track[1] + 25]
         
     def collide(self):
         left_check = camera.track[0] - self.char_size[0]/2.0 
@@ -816,38 +885,45 @@ class Fadingblock:
         
         if char.check == 'Down':
             if left_check > self.horizontal[0] - self.char_size[0] + 5 and right_check < self.horizontal[1] + self.char_size[0] - 5:
-                if down_check > self.vertical[0] and up_check < self.vertical[0] - self.char_size[1] + 10:
+                if down_check >= self.vertical[0] and up_check < self.vertical[0] - self.char_size[1] + 10:
                     char.vel[1] = 0
                     char.pos[1] = self.vertical[0] - self.char_size[1]/2.0
                     char.fly = False
                     char.fly_track = 0
                     return True
                 
-            if (up_check <= self.vertical[1] and down_check > self.vertical[1]) or (down_check > self.vertical[0] and up_check < self.vertical[0]):
-                if char.vel[0] < 0 and left_check <= self.horizontal[1] and right_check >= self.horizontal[1]:
-                    char.vel[0] = 0
-                elif char.vel[0] > 0 and right_check >= self.horizontal[0] and left_check <= self.horizontal[0]:
-                    char.vel[0] = 0
+            if self.block_type != 'Moving':    
+                if (up_check <= self.vertical[1] and down_check > self.vertical[1]) or (down_check > self.vertical[0] and up_check < self.vertical[0]):
+                    if char.vel[0] < 0 and left_check <= self.horizontal[1] and right_check >= self.horizontal[1]:
+                        char.vel[0] = 0
+                    elif char.vel[0] > 0 and right_check >= self.horizontal[0] and left_check <= self.horizontal[0]:
+                        char.vel[0] = 0
                     
         elif char.check == 'Up':
             if left_check > self.horizontal[0] - self.char_size[0] + 5 and right_check < self.horizontal[1] + self.char_size[0] - 5:
-                if up_check < self.vertical[1] and down_check > self.vertical[1] + self.char_size[1] - 10:
+                if up_check <= self.vertical[1] and down_check > self.vertical[1] + self.char_size[1] - 10:
                     char.vel[1] = 0
                     char.pos[1] = self.vertical[1] + self.char_size[1] / 2.0
                     char.fly = False
                     char.fly_track = 0
                     return True
                 
-            if (up_check <= self.vertical[1] and down_check > self.vertical[1]) or (down_check > self.vertical[0] and up_check < self.vertical[0]):
-                if char.vel[0] < 0 and left_check <= self.horizontal[1] and right_check >= self.horizontal[1]:
-                    char.vel[0] = 0
-                elif char.vel[0] > 0 and right_check >= self.horizontal[0] and left_check <= self.horizontal[0]:
-                    char.vel[0] = 0
+            if self.block_type != 'Moving':    
+                if (up_check <= self.vertical[1] and down_check > self.vertical[1]) or (down_check > self.vertical[0] and up_check < self.vertical[0]):
+                    if char.vel[0] < 0 and left_check <= self.horizontal[1] and right_check >= self.horizontal[1]:
+                        char.vel[0] = 0
+                    elif char.vel[0] > 0 and right_check >= self.horizontal[0] and left_check <= self.horizontal[0]:
+                        char.vel[0] = 0
                 
     def draw(self, canvas):
         self.update()
-        canvas.draw_image(self.image, [125, 125], self.image_size, 
+        if self.block_type == 'Blink':
+            if dist(self.track, camera.track) <= 120:
+                canvas.draw_image(self.image, [125, 125], self.image_size, 
                           self.draw_pos, self.draw_size)
+        else:
+            canvas.draw_image(self.image, [125, 125], self.image_size, 
+                              self.draw_pos, self.draw_size)
 
 # Chasing ghost    
 class Ghost:
@@ -858,17 +934,18 @@ class Ghost:
         self.draw_size = [80, 80]
         self.draw_pos = [0, 0]
         self.degree = 0
-        self.count = 1
+        self.count = 0
         self.boom = False
         self.expimg = explosion_image
         
     def reset(self):
         self.track = [0, 0]
+        self.count = 0
         
     def update(self):
         self.degree = math.atan2((camera.track[0] - self.track[0]), (camera.track[1] - self.track[1]))
-        self.track[0] += (2 + char.level) * math.sin(self.degree)
-        self.track[1] += (2 + char.level) * math.cos(self.degree)
+        self.track[0] += (2 + 0.2 * char.level) * math.sin(self.degree)
+        self.track[1] += (2 + 0.2 * char.level) * math.cos(self.degree)
         self.draw_pos[1] = self.track[1]
         self.draw_pos[0] = self.track[0] - camera.pos[0]
         
@@ -917,12 +994,12 @@ class Pause:
                              'W   W W W  W  W  W W  W W W W   ',
                              'WWW WWW W  W  W  W W  W WWW WWW ',
                              '                                ',
-                             '              WWW               ',
+                             '               WWW              ',
+                             '                 W              ',
+                             '                WW              ',
                              '                W               ',
-                             '               WW               ',
-                             '               W                ',
                              '                                ',
-                             '               W                ',
+                             '                W               ',
                              '       WWWWWW       WWWWWW      ',
                              '       W    W       W    W      ',
                              '       W    W       W    W      ',
@@ -977,34 +1054,92 @@ class Pause:
                 started = False
                 char.reset()
                 char.lives = 5
+                
+class Endgame:
+    def __init__(self):
+        self.name = ""
+        self.splash_screen= ['                                ',
+                             '  WWWW  WWW W   W WWW           ',
+                             '  W     W W WW WW W             ',
+                             '  W  WW WWW W W W WW            ',
+                             '  W   W W W W   W W             ',
+                             '  WWWWW W W W   W WWW           ',
+                             '                                ',
+                             '          WWW W WW WWW WWW  W   ',
+                             '          W W W W  W   W W  W   ',
+                             '          W W W W  WW  WW   W   ',
+                             '          W W W W  W   W W      ',
+                             '          WWW  W   WWW W W  W   ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ',
+                             '                                ']
+        
+    def draw(self, canvas):
+        canvas.draw_image(background, [800, 600], [1600, 1200], [WIDTH/2, HEIGHT/2], [WIDTH, HEIGHT])
+        for i in range(24):
+            for j in range(31):
+                if self.splash_screen[i][j] == 'W':
+                    canvas.draw_image(tile, [125, 125], [250, 250], [12.5 + 25 * j, 12.5 + 25 * i], [25, 25])
+                    
+        if not name_entered:
+            canvas.draw_text('Enter your name: ', [8 * 25, 16 * 25], 20, 'Black', 'sans-serif')
+            canvas.draw_text(self.name, [16 * 25, 16 * 25], 20, 'Black', 'sans-serif')
+        else:
+            canvas.draw_text('Click anywhere to get out!', [10 * 25, 16 * 25], 20, 'Black', 'sans-serif')
+        
+    def key_handler(self, key):
+        global name_entered
+        if not name_entered:
+            if key > 64 and key < 91:
+                self.name += chr(key)
+            elif key == 13:
+                name_entered = True
+                hall.names[self.name] = char.coins
+    
+    def click(self, pos):
+        global started, end_game, name_entered
+        if pos[0] > 0 and pos[0] < 800 and pos[1] > 0 and pos[1] < 600:
+            started = False
+            end_game = False
+            name_entered = False
+            
 
 # Storing the matrix for each stage
 
 # Stage 1
 level1_matrix = ['WWWWWWWWWWW WWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
-                 'WWWWWWWWWWW WWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
-                 'W    W W     WWW       W W       RRR           CCCC           W WWWWWWWWWWWWWWWWWWWWWW',
-                 'W                      WWW                                    W W            WWWWWWWWW',
+                 'WWWWWWWWWWW WWWWW  WWWCCCCCWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
+                 'W    W W     WWW     WCCCCCW     RRR           CCCC           WCWWWWWWWWWWWWWWWWWWWWWW',
+                 'W                     WFWWW                                   WCW            WWWWWWWWW',
                  'W                                                                            WWWWWWWWW',
                  'W                                                                            WWWWWWWWW',
-                 'W                                                                            WWWWWWWWW',
-                 'W                                                                            WWWWWWWWW',
+                 'W              CCCC                                                          WWWWWWWWW',
+                 'W                                      CCC       V                           WWWWWWWWW',
                  'W         WWW                         WCW                                    WWWWWWWWW',
-                 'W         WWW     TTT        NNN      WWW                                    WWWWWWWWW',
+                 'W         WWW     TTT        NNN      WWW                 CCCCC H            WWWWWWWWW',
                  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
                  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW']
 
 # Stage 2
-level2_matrix = ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWWWWWWWWWWWWWW       F    F    F   W     WWW  FFW  WWWW  WWWW    WWWWWWWWWWWWWWWWW',
-                 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWW  WWWWWWW    WW  WC  WFC WWC  WWC                             WWWWWWWWWWWWWWWWW',
-                 'WWWWWWWWWWWWWWWW                   WW  WW  WW  WW W                       CC      C       CC                                           WWWWW',
-                 'W             WW                                                                               WWWWWWFFWWWWWWWWWWWWWWWWW               WWWWW',
-                 'W             WW                                                                CCC              RRRR  RRRRRR   R  RRR      WWW        WWWWW',
+level2_matrix = ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWWWWWWWWWWWWWW       F    F    F   W     WWWW FFF  WFFF  WWWW    WWWWWWWWWWWWWWWWW',
+                 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWW  WWWWWWW    WW  WC  WFC WWC  WWC                CC           WWWWWWWWWWWWWWWWW',
+                 'WWWWWWWWWWWWWWWW                   WW  WW  WW  WW W                       CC      C       CC       CCCCC                               WWWWW',
+                 'W             WW                                                                               WWWWWWFFWWWWWWWWWFWWWWWWW               WWWWW',
+                 'W             WW          C                                                     CCC              RRRR  RR  RR   R  RRR      WWW        WWWWW',
                  'W                        FFF                                WWW             WW  FFF  FF WW FF                                          WWWWW',
-                 'W                                                           W W                      CC CC                                             WWWWW',
-                 'W        WWW                                                W W                                                                        WWWWW',
-                 'W                                   WWFFWWW  FWF  WWW                                                                                  WWWWW',
-                 'W       NNNNNN                                                                            CCC   NN   NN  NNNNNN  NN   NN   TTTT        WWWWW',
+                 'W                                        CCCC               WCW                      CC CC             CCCC    CCCC                    WWWWW',
+                 'W        WWW                                                WCW                                    CCCC    CCCC    CCCC                WWWWW',
+                 'W                                   WWFFWWW  FWF  WWW                                                                      CCCC        WWWWW',
+                 'W       NNNNNN          CCC                                      CC                       CCC   NN   NN  NNN  N  NN   NN   TTTT        WWWWW',
                  'WWWWWWWWWWWWWWWWWWWTTTTWWWWWWWWWW                    WWWWWW   WWWWWFFWW WW   WW  CCW   W  FFF   WWWWWWWWWWWWWWWWWWWWWWWW   WWWW        WWWWW',
                  'WWWWWWWW     WWWWWWWWWWWWWWW         W   W  W   W   W  WWWW     WWWFFWW          FFW    W                                  WWWWWWWWWWWWWWWWW']
 
@@ -1013,35 +1148,15 @@ level2_matrix = ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWWWW
 char = Character([150, 460], 100, character, reverse_char, [32, 32 + 64 * 6], [64, 64])
 
 # Enemies for the first stage
-enemy = Enemy([1100, 460], enemy_image, [32, 32], [64, 64], 460, 'horizontal')
-enemy2 = Enemy([400, 400], enemy_image, [32, 32], [64, 64], 400, 'vertical')
-enemy3 = Enemy([1700, 400], enemy_image, [32, 32], [64, 64], 400, 'vertical')
+enemy = Enemy([1100, 460], enemy_image, [32, 32], [64, 64], 'horizontal')
+enemy2 = Enemy([400, 400], enemy_image, [32, 32], [64, 64], 'vertical')
+enemy3 = Enemy([1700, 400], enemy_image, [32, 32], [64, 64], 'vertical')
 enemy_group = set([enemy, enemy2, enemy3])
 
 # Additional enemies for the second stage
-enemy4 = Enemy([25 + 24 * 50, 460], enemy_image, [32, 32], [64, 64], 460, 'horizontal')
-enemy5 = Enemy([25 + 42 * 50, 300], enemy_image, [32, 32], [64, 64], 300, 'vertical')
+enemy4 = Enemy([25 + 24 * 50, 460], enemy_image, [32, 32], [64, 64], 'horizontal')
+enemy5 = Enemy([25 + 42 * 50, 300], enemy_image, [32, 32], [64, 64], 'vertical')
 enemy_group2 = set([enemy2, enemy3, enemy4, enemy5])
-
-# Coins for the first stage
-coin_group = set()
-for i in range(4):
-    coin = Coin([25 + (13 + i) * 50, 25 + 6 * 50], coin_image, [16, 16], [32, 32])
-    coin_group.add(coin)  
-    
-for i in range(3):
-    coin = Coin([25 + (39 + i) * 50, 25 + 6 * 50], coin_image, [16, 16], [32, 32])
-    coin_group.add(coin)
-    
-for i in range(5):
-    coin = Coin([25 + (63 + i) * 50, 25 + 9 * 50], coin_image, [16, 16], [32, 32])
-    coin_group.add(coin)
-
-# Additional coins for the second stage    
-coin_group2 = coin_group.copy()
-for i in range(10):
-    coin = Coin([25 + (77 + i) * 50, 25 + 6 * 50], coin_image, [15, 16], [32, 32])
-    coin_group2.add(coin)
 
 # Goal for the first stage
 goal = Door([71 * 50 + 25, 460], door, [32, 32], [64, 64])
@@ -1058,28 +1173,35 @@ menu = Menu()
 instruct = Instructions()
 hall = Hall_of_fame()
 pause_menu = Pause()
+end = Endgame()
 
 ghost = Ghost([0, 0], ghost_image, explosion_image)
 
 # Initialize the stages
-stage1 = Stage(level1_matrix, coin_group, goal_group, enemy_group)
-stage2 = Stage(level2_matrix, coin_group2, set(), enemy_group2)
+stage1 = Stage(level1_matrix, set(), goal_group, enemy_group)
+stage2 = Stage(level2_matrix, set(), set(), enemy_group2)
 
 def keyup_handler(key):
     char.keyup_handler(key)
     
 def keydown_handler(key):
-    char.keydown_handler(key)   
+    if not end_game:
+        char.keydown_handler(key)   
+    else:
+        end.key_handler(key)
     
 def mouse_click(pos):
-    menu.click(pos)
-    if started == False and howto == True:
+    if not started and not howto and not high_score:
+        menu.click(pos)
+    elif not started and howto:
         instruct.click(pos)
-    elif started == False and high_score == True:
+    elif not started and high_score:
         hall.click(pos)
     else:
         if pause:
             pause_menu.click(pos)
+        elif end_game:
+            end.click(pos)
             
 def button_handler():
     global started, pause
@@ -1088,7 +1210,7 @@ def button_handler():
     
 def draw_handler(canvas):
     global stage1, stage2
-    if started == False:
+    if not started:
         if howto == False and high_score == False:
             menu.draw(canvas)
         elif howto == True:
@@ -1099,6 +1221,8 @@ def draw_handler(canvas):
     else:
         if pause:
             pause_menu.draw(canvas)
+        elif end_game:
+            end.draw(canvas)
         else:
             camera.update()
             if char.get_level() == 0:
@@ -1124,5 +1248,4 @@ frame.set_keydown_handler(keydown_handler)
 frame.set_mouseclick_handler(mouse_click)
 button = frame.add_button('PAUSE', button_handler)
 frame.start()
-
 
