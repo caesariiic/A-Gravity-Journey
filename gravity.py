@@ -1,11 +1,11 @@
 # A Gravity Journey
-# Ver 6
+# Ver 8
 
 # TODO
 # 1. Find sounds (...)
-# 6. Multiplayer (if there is time, which is unlikely)
 
-# CodeSkulptor link: http://www.codeskulptor.org/#user40_VvZGYFVNF2_6.py
+# Run on CodeSkulptor: http://www.codeskulptor.org/
+# Copy the code to CodeSkulptor and run, CodeSkulptor is unable to save this file because the matrix for stage 3 is too long.
 
 import simplegui
 import random
@@ -168,7 +168,7 @@ class Character:
                 stage2.reset()
                 end_game = True
                 end.name = ""
-                # stage3.reset()
+                stage3.reset()
                 
             self.sound()
             self.pos[1] = self.pos[1] + self.vel[1]
@@ -294,6 +294,8 @@ class Character:
                 self.pos[1] += self.vel[1]
             if self.pos[1] > 600:
                 self.reset()
+                if self.level == 2:
+                    stage3.soft_reset()
                             
     def reverse_gravity(self):
         if self.pos[1] > 40 and self.pos[1] < (600 - 40):
@@ -307,10 +309,10 @@ class Character:
                 self.check = 'Down'
     
     def move_right(self):
-        self.vel[0] = 15.0/6.0
+        self.vel[0] = 18.0/6.0
     
     def move_left(self):
-        self.vel[0] = - 15.0 / 6.0
+        self.vel[0] = - 18.0 / 6.0
     
     def keydown_handler(self, key):
         if key == simplegui.KEY_MAP['left']:
@@ -384,6 +386,7 @@ class Stage:
         self.goal_group = goal_group
         self.coin_group = coin_group
         self.block_group = set()
+        self.moving_group = set()
         
         for i in range(12):
             for j in range(len(self.level_info[1])):
@@ -397,18 +400,22 @@ class Stage:
                     blink_block = Blocks([25 + 50 * j, 25 + 50 * i], tile, 'Blink')
                     self.block_group.add(blink_block)
                 elif self.level_info[i][j] == 'M':
-                    moving_block = Blocks([25 + 50 * j, 25 + 50 * i], tile, 'Moving')
-                    self.block_group.add(moving_block)
+                    moving_block = Blocks([25 + 50 * j, 25 + 50 * i], tile, 'Moving', 'Right')
+                    self.moving_group.add(moving_block)
                 elif self.level_info[i][j] == 'H':
                     horizontal_enemy = Enemy([25 + 50 * j, 10 + 50 * i], enemy_image, [32, 32], [64, 64], 'horizontal')
                     self.enemy_group.add(horizontal_enemy)
                 elif self.level_info[i][j] == 'V':
                     vertical_enemy = Enemy([25 + 50 * j, 10 + 50 * i], enemy_image, [32, 32], [64, 64], 'vertical')
                     self.enemy_group.add(vertical_enemy)
+                elif self.level_info[i][j] == 'L':
+                    moving_block = Blocks([25 + 50 * j, 25 + 50 * i], tile, 'Moving', 'Left')
+                    self.moving_group.add(moving_block)
                     
     def reset(self):
         self.block_group = set()
         self.coin_group = set()
+        self.moving_group = set()
         
         for i in range(12):
             for j in range(len(self.level_info[1])):
@@ -422,8 +429,22 @@ class Stage:
                     blink_block = Blocks([25 + 50 * j, 25 + 50 * i], tile, 'Blink')
                     self.block_group.add(blink_block)
                 elif self.level_info[i][j] == 'M':
-                    moving_block = Blocks([25 + 50 * j, 25 + 50 * i], tile, 'Moving')
-                    self.block_group.add(moving_block)
+                    moving_block = Blocks([25 + 50 * j, 25 + 50 * i], tile, 'Moving', 'Right')
+                    self.moving_group.add(moving_block)
+                elif self.level_info[i][j] == 'L':
+                    moving_block = Blocks([25 + 50 * j, 25 + 50 * i], tile, 'Moving', 'Left')
+                    self.moving_group.add(moving_block)
+                    
+    def soft_reset(self):
+        self.moving_group = set()
+        for i in range(12):
+            for j in range(len(self.level_info[1])):
+                if self.level_info[i][j] == 'M':
+                    moving_block = Blocks([25 + 50 * j, 25 + 50 * i], tile, 'Moving', 'Right')
+                    self.moving_group.add(moving_block)
+                elif self.level_info[i][j] == 'L':
+                    moving_block = Blocks([25 + 50 * j, 25 + 50 * i], tile, 'Moving', 'Left')
+                    self.moving_group.add(moving_block)
         
     def draw(self, canvas):
         
@@ -449,8 +470,12 @@ class Stage:
         for blockidx in self.block_group:
             if blockidx.track[0] > camera.pos[0] and blockidx.track[0] < camera.pos[0] + 900:
                 blockidx.draw(canvas)
-                if blockidx.collide():
+                if blockidx.collide() and blockidx.block_type == 'Fading':
                     self.block_group.discard(blockidx)
+                    
+        for moving_block in self.moving_group:
+            moving_block.draw(canvas)
+            moving_block.collide()
         
         # Basically two timers for animation    
         self.coin_count = (self.coin_count + 1) % (8 * 10)
@@ -639,6 +664,8 @@ class Menu:
                              '                                ']
         self.coin_count = 0
         self.needle_count = 0
+        self.enemy_count = 0
+        self.char_count = 0 
         
         # The start 'button'
         self.start_button_horizontal = [4 * 25, 27 * 25]
@@ -656,6 +683,8 @@ class Menu:
         # Again, timers for animation 
         self.coin_count = (self.coin_count + 1) % (8 * 10)
         self.needle_count = (self.needle_count + 1) % (2 * 9)
+        self.enemy_count = (self.enemy_count + 1) % (10 * 6)
+        self.char_count = (self.char_count + 1) % (10 * 9)
         
         # Draw background
         canvas.draw_image(background, [800, 600], [1600, 1200], [WIDTH/2, HEIGHT/2], [WIDTH, HEIGHT])
@@ -672,6 +701,9 @@ class Menu:
                         canvas.draw_image(needle_trap_2, [369/2.0, 369/2.0], [369, 369], [12.5 + 25 * j, 12.5 + 25 * i], [25, 25])
                 elif self.splash_screen[i][j] == 'C':
                     canvas.draw_image(coin_image, [16, 16 + (self.coin_count / 10) * 32], [32, 32], [12.5 + 25 * j, 12.5 + 25 * i], [38, 38])
+                    
+        canvas.draw_image(ghost_image, [32 + (self.enemy_count / 10) * 64, 32 + 15 * 64], [64, 64], [10 * 25, 9 * 25], [50, 50])
+        canvas.draw_image(character, [32 + (self.char_count / 10) * 64, 32 + 10 * 64], [64, 64], [15 * 25, 25], [50, 50])
 
     # Check if one of the Menu's buttons is clicked
     def click(self, pos):
@@ -812,6 +844,9 @@ class Door:
                     char.reset()
                     char.lives += 1
                     pause = False
+                else:
+                    end_game = True
+                    end.name = ""
                 self.count = 0
                 
         else:
@@ -846,7 +881,7 @@ class Coin:
 
 # Class for fading blocks, moving blocks, blinking blocks
 class Blocks:
-    def __init__(self, track, image, block_type = 'Fading'):
+    def __init__(self, track, image, block_type = 'Fading', move_type = 'Left'):
         self.track = track
         self.image = image
         self.image_size = [250, 250]
@@ -859,22 +894,30 @@ class Blocks:
         self.block_type = block_type
         self.move_counter = 0
         self.vel = [0, 0]
+        self.move_type = move_type
         
     def move_left(self):
-        self.vel[0] = - 6/ 6.0
+        self.vel[0] = - 14/ 6.0
     
     def move_right(self):
-        self.vel[0] = 6/ 6.0
+        self.vel[0] = 14/ 6.0
         
     def update(self):
         self.draw_pos[1] = self.track[1]
         self.draw_pos[0] = self.track[0] - camera.pos[0]
         if self.block_type == 'Moving':
-            self.move_counter = (self.move_counter + 1) % 160
-            if self.move_counter < 80:
-                self.move_left()
+            self.move_counter = (self.move_counter + 1) % 940
+            if self.move_counter < 470:
+                if self.move_type == 'Left':
+                    self.move_left()
+                else:
+                    self.move_right()
             else:
-                self.move_right()
+                if self.move_type == 'Left':
+                    self.move_right()
+                else:
+                    self.move_left()
+                    
             self.track[0] += self.vel[0]
             self.horizontal = [self.track[0] - 25, self.track[0] + 25]
             self.vertical = [self.track[1] - 25, self.track[1] + 25]
@@ -896,7 +939,7 @@ class Blocks:
                     return True
                 
             if self.block_type != 'Moving':    
-                if (up_check <= self.vertical[1] and down_check > self.vertical[1]) or (down_check > self.vertical[0] and up_check < self.vertical[0]):
+                if (up_check < self.vertical[1] and down_check > self.vertical[1]) or (down_check > self.vertical[0] and up_check < self.vertical[0]):
                     if char.vel[0] < 0 and left_check <= self.horizontal[1] and right_check >= self.horizontal[1]:
                         char.vel[0] = 0
                     elif char.vel[0] > 0 and right_check >= self.horizontal[0] and left_check <= self.horizontal[0]:
@@ -912,7 +955,7 @@ class Blocks:
                     return True
                 
             if self.block_type != 'Moving':    
-                if (up_check <= self.vertical[1] and down_check > self.vertical[1]) or (down_check > self.vertical[0] and up_check < self.vertical[0]):
+                if (up_check < self.vertical[1] and down_check > self.vertical[1]) or (down_check > self.vertical[0] and up_check < self.vertical[0]):
                     if char.vel[0] < 0 and left_check <= self.horizontal[1] and right_check >= self.horizontal[1]:
                         char.vel[0] = 0
                     elif char.vel[0] > 0 and right_check >= self.horizontal[0] and left_check <= self.horizontal[0]:
@@ -947,8 +990,8 @@ class Ghost:
         
     def update(self):
         self.degree = math.atan2((camera.track[0] - self.track[0]), (camera.track[1] - self.track[1]))
-        self.track[0] += (2 + 0.2 * char.level) * math.sin(self.degree)
-        self.track[1] += (2 + 0.2 * char.level) * math.cos(self.degree)
+        self.track[0] += (2 + 0.1 * char.level) * math.sin(self.degree)
+        self.track[1] += (2 + 0.1 * char.level) * math.cos(self.degree)
         self.draw_pos[1] = self.track[1]
         self.draw_pos[0] = self.track[0] - camera.pos[0]
         
@@ -1094,8 +1137,9 @@ class Endgame:
                     canvas.draw_image(tile, [125, 125], [250, 250], [12.5 + 25 * j, 12.5 + 25 * i], [25, 25])
                     
         if not name_entered:
-            canvas.draw_text('Enter your name: ', [8 * 25, 16 * 25], 20, 'Black', 'sans-serif')
-            canvas.draw_text(self.name, [16 * 25, 16 * 25], 20, 'Black', 'sans-serif')
+            canvas.draw_text('Enter your name: ', [8 * 25, 16 * 25], 25, 'Black', 'sans-serif')
+            canvas.draw_text(self.name, [16 * 25, 16 * 25], 25, 'Black', 'sans-serif')
+            canvas.draw_text('Press "Enter" when you are done', [10 * 25, 19 * 25], 20, 'Black', 'sans-serif')
         else:
             canvas.draw_text('Click anywhere to get out!', [10 * 25, 16 * 25], 20, 'Black', 'sans-serif')
         
@@ -1122,7 +1166,7 @@ class Endgame:
 level1_matrix = ['WWWWWWWWWWW WWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
                  'WWWWWWWWWWW WWWWW  WWWCCCCCWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
                  'W    W W     WWW     WCCCCCW     RRR           CCCC           WCWWWWWWWWWWWWWWWWWWWWWW',
-                 'W                     WFWWW                                   WCW            WWWWWWWWW',
+                 'W                     WFWWF                                   WCW            WWWWWWWWW',
                  'W                                                                            WWWWWWWWW',
                  'W                                                                            WWWWWWWWW',
                  'W              CCCC                                                          WWWWWWWWW',
@@ -1146,6 +1190,21 @@ level2_matrix = ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWWWW
                  'WWWWWWWWWWWWWWWWWWWTTTTWWWWWWWWWW                    WWWWWW   WWWWWFFWW WW   WW  CCW   W  FFF   WWWWWWWWWWWWWWWWWWWWWWWW   WWWW        WWWWW',
                  'WWWWWWWW     WWWWWWWWWWWWWWW         W   W  W   W   W  WWWW     WWWFFWW          FFW    W                                  WWWWWWWWWWWWWWWWW']
 
+# Stage 3
+level3_matrix = ['WWWWWWWWWWWFFFWWWWWWWW                                                           WWWWFFMM                        WWWWW                    WWWWWWFFFFF                         WWWWWWWWWWWWWWWWWWWWWWWWWWWW                        B                WWWWW',
+                 'WWWWWCCCCCCCCCCCCCCWWW                      LLL                  FFFFBBBB         CCCCC                          WWWWW                       CCCCCC                           WWWWWWWWW WWWWW WWWWW WWWW                                  LLL      WWWWW',
+                 'W   WCCCCCCCCCCCCCCW      CCCCC CCCC CCCCC                                                                CC     WWWWWMMMM                                                    WWWWWWWWW WWWWW WWWWW WWWW FFFFFFFFFFFFFFFF   FFFF  B                WWWWW',
+                 'W    WFWWFFWWWWWWWF       V    V    V     V                                                               CC     WWWWW                       CCCC                             WWW      VCCCCCVCCCCCVCCCCV                         B                WWWWW',
+                 'W                                                                                                         CC     WWWWW                         CCCC                           WWW                                                 B                WWWWW',
+                 'W                                                                                                                                                                             WWW      V     V     V    V                                          WWWWW',
+                 'W                                                                    B                W                                                                                   LLL                                                                      WWWWW',
+                 'W                                                                    B                W                                                                                                                                           B                WWWWW',
+                 'W                        CCCC CCCC CCCC CCCC  MMMM                                    W                                                                                                                                           B           BB   WWWWW',
+                 'W                       VWWWWVWWWWVWFFWVWWWWFF                                          LLL                                               BBBBBBBBBBBB                                   NN    NN    N       FFFFFFFFFFFFFF FFFFFFF                WWWWW',
+                 'WWWWWWWWWWWWWWWWWWWWWWW                                                                                     WWWWWWWWWWTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT                          LLL                                         WWWWW',
+                 'W                                                                                                           WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW            WW    WW    W                                             WWWWW',]
+                 
+
 
 # Initialize character
 char = Character([150, 460], 100, character, reverse_char, [32, 32 + 64 * 6], [64, 64])
@@ -1166,7 +1225,12 @@ goal = Door([71 * 50 + 25, 460], door, [32, 32], [64, 64])
 goal_group = set([goal])
 
 # Goal for the second stage
-# Not done yet
+goal2 = Door([133 * 50 + 25, 510], door, [32, 32], [64, 64])
+goal_group2 = set([goal2])
+
+# Goal for last stage
+goal3 = Door([239 * 50, 360], door, [32, 32], [64, 64])
+goal_group3 = set([goal3])
 
 # Enemies and other objects are encoded directly into the level matrix at this point!
 
@@ -1182,7 +1246,8 @@ ghost = Ghost([0, 0], ghost_image, explosion_image)
 
 # Initialize the stages
 stage1 = Stage(level1_matrix, set(), goal_group, enemy_group)
-stage2 = Stage(level2_matrix, set(), set(), enemy_group2)
+stage2 = Stage(level2_matrix, set(), goal_group2, enemy_group2)
+stage3 = Stage(level3_matrix, set(), goal_group3, set())
 
 def keyup_handler(key):
     char.keyup_handler(key)
