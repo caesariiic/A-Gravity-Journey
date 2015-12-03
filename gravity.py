@@ -169,6 +169,7 @@ class Character:
                 end_game = True
                 end.name = ""
                 stage3.reset()
+                stage4.reset()
                 
             self.sound()
             self.pos[1] = self.pos[1] + self.vel[1]
@@ -208,6 +209,8 @@ class Character:
                 grid = stage2.get_info()
             elif self.level == 2:
                  grid = stage3.get_info()
+            else:
+                grid = stage4.get_info()
     
             # For some reason doesn't work if space is press when character in the last grid
             if self.pos[1] < 0 or self.pos[1] > 600:
@@ -839,7 +842,7 @@ class Door:
             
             # Go to the next level after door is opened
             if self.count == 2 * 10 + 2:
-                if char.level < 2:
+                if char.level < 3:
                     char.level += 1
                     char.reset()
                     char.lives += 1
@@ -1191,21 +1194,34 @@ level2_matrix = ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWWWW
                  'WWWWWWWW     WWWWWWWWWWWWWWW         W   W  W   W   W  WWWW     WWWFFWW          FFW    W                                  WWWWWWWWWWWWWWWWW']
 
 # Stage 3
-level3_matrix = ['WWWWWWWWWWWFFFWWWWWWWW                                                           WWWWFFMM                        WWWWW                    WWWWWWFFFFF                         WWWWWWWWWWWWWWWWWWWWWWWWWWWW                        B                WWWWW',
-                 'WWWWWCCCCCCCCCCCCCCWWW                      LLL                  FFFFBBBB         CCCCC                          WWWWW                       CCCCCC                           WWWWWWWWW WWWWW WWWWW WWWW                                  LLL      WWWWW',
-                 'W   WCCCCCCCCCCCCCCW      CCCCC CCCC CCCCC                                                                CC     WWWWWMMMM                                                    WWWWWWWWW WWWWW WWWWW WWWW FFFFFFFFFFFFFFFF   FFFF  B                WWWWW',
-                 'W    WFWWFFWWWWWWWF       V    V    V     V                                                               CC     WWWWW                       CCCC                             WWW      VCCCCCVCCCCCVCCCCV                         B                WWWWW',
-                 'W                                                                                                         CC     WWWWW                         CCCC                           WWW                                                 B                WWWWW',
-                 'W                                                                                                                                                                             WWW      V     V     V    V                                          WWWWW',
-                 'W                                                                    B                W                                                                                   LLL                                                                      WWWWW',
-                 'W                                                                    B                W                                                                                                                                           B                WWWWW',
-                 'W                        CCCC CCCC CCCC CCCC  MMMM                                    W                                                                                                                                           B           BB   WWWWW',
-                 'W                       VWWWWVWWWWVWFFWVWWWWFF                                          LLL                                               BBBBBBBBBBBB                                   NN    NN    N       FFFFFFFFFFFFFF FFFFFFF                WWWWW',
-                 'WWWWWWWWWWWWWWWWWWWWWWW                                                                                     WWWWWWWWWWTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT                          LLL                                         WWWWW',
-                 'W                                                                                                           WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW            WW    WW    W                                             WWWWW',]
+level3_matrix = ['WWWWWWWWWWWFFFWWWWWWWW                                                           WWWWFFMM                                WWWW',
+                 'WWWWWCCCCCCCCCCCCCCWWW                      LLL                  FFFFBBBB         CCCCC                                  WWWW',
+                 'W   WCCCCCCCCCCCCCCW      CCCCC CCCC CCCCC                                                                CC             WWWW',
+                 'W    WFWWFFWWWWWWWF       V    V    V     V                                                               CC             WWWW',
+                 'W                                                                                                         CC             WWWW',
+                 'W                                                                                                                        WWWW',
+                 'W                                                                    B                W                                  WWWW',
+                 'W                                                                    B                W                                  WWWW',
+                 'W                        CCCC CCCC CCCC CCCC  MMMM                                    W                                  WWWW',
+                 'W                       VWWWWVWWWWVWFFWVWWWWFF                                          LLL                 WWWWWWWWWWWWWWWWW',
+                 'WWWWWWWWWWWWWWWWWWWWWWW                                                                                                  WWWW',
+                 'W                                                                                                                        WWWW']
                  
 
-
+# Stage 4
+level4_matrix = ['WW                    WWWWWWFFFFF                         WWWWWWWWWWWWWWWWWWWWWWWWWWWW                        B                WWWWWW',
+                 'WW                       CCCCCC                           WWWWWWWWW WWWWW WWWWW WWWW                                  LLL      WWWWWW',
+                 'WWMMMM                                                    WWWWWWWWW WWWWW WWWWW WWWW FFFFFFFFFFFFFFFF   FFFF  B                WWWWWW',
+                 'WW                       CCCC                             WWW      VCCCCCVCCCCCVCCCCV                         B                WWWWWW',
+                 'WW                         CCCC                           WWW                                                 B                WWWWWW',
+                 '                                                          WWW      V     V     V    V                                          WWWWWW',
+                 '                                                      LLL                                                                      WWWWWW',
+                 '                                                                                                              B                WWWWWW',
+                 '                                                                                                              B           BB   WWWWWW',
+                 '                      BBBBBBBBBBBB                                   NN    NN    N       FFFFFFFFFFFFFF FFFFFFF                WWWWWW',
+                 'WWWWTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT                          LLL                                         WWWWWW',
+                 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW            WW    WW    W                                             WWWWWW']
+    
 # Initialize character
 char = Character([150, 460], 100, character, reverse_char, [32, 32 + 64 * 6], [64, 64])
 
@@ -1228,9 +1244,13 @@ goal_group = set([goal])
 goal2 = Door([133 * 50 + 25, 510], door, [32, 32], [64, 64])
 goal_group2 = set([goal2])
 
-# Goal for last stage
-goal3 = Door([239 * 50, 360], door, [32, 32], [64, 64])
+# Goal for third stage
+goal3 = Door([128 * 50, 410], door, [32, 32], [64, 64])
 goal_group3 = set([goal3])
+
+# Goal for the last stage
+goal4 = Door([126 * 50, 360], door, [32, 32], [64, 64])
+goal_group4 = set([goal4])
 
 # Enemies and other objects are encoded directly into the level matrix at this point!
 
@@ -1248,6 +1268,7 @@ ghost = Ghost([0, 0], ghost_image, explosion_image)
 stage1 = Stage(level1_matrix, set(), goal_group, enemy_group)
 stage2 = Stage(level2_matrix, set(), goal_group2, enemy_group2)
 stage3 = Stage(level3_matrix, set(), goal_group3, set())
+stage4 = Stage(level4_matrix, set(), goal_group4, set())
 
 def keyup_handler(key):
     char.keyup_handler(key)
@@ -1299,11 +1320,18 @@ def draw_handler(canvas):
             elif char.get_level() == 1:
                 stage2.draw(canvas)
             
-            else:
+            elif char.get_level() == 2:
                 stage3.draw(canvas)
+                
+            else:
+                stage4.draw(canvas)
 
             char.update()
-            char.draw(canvas)
+            if not char.dead:
+                char.draw(canvas)
+            else:
+                if char.dead_count % 2 == 0:
+                    char.draw(canvas)
             ghost.draw(canvas)
             if ghost.collide():
                 char.dead = True
@@ -1316,4 +1344,3 @@ frame.set_keydown_handler(keydown_handler)
 frame.set_mouseclick_handler(mouse_click)
 button = frame.add_button('PAUSE', button_handler)
 frame.start()
-
