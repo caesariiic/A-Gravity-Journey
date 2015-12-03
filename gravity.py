@@ -1,21 +1,15 @@
 # A Gravity Journey
 # Ver 8
+# Pitch sheet: https://www.dropbox.com/s/9w9kt91q2poq7yd/gravity_pitch_sheet.pdf?dl=0
 
-# TODO
-# 1. Find sounds (...)
-
-# Run on CodeSkulptor: http://www.codeskulptor.org/
-# Copy the code to CodeSkulptor and run, CodeSkulptor is unable to save this file because the matrix for stage 3 is too long.
+# CodeSkulptor link: http://www.codeskulptor.org/#user40_T4L9jBPKx1_2.py
 
 import simplegui
 import random
 import math
 
-# Constant variables
 WIDTH = 800
 HEIGHT = 600
-
-# Flags
 started = False
 howto = False
 high_score = False
@@ -24,7 +18,6 @@ end_game = False
 name_entered = False
 
 # Images and sprite sheets 
-
 background = simplegui.load_image("https://i.imgur.com/sdfuQ6n.jpg")
 tile = simplegui.load_image("https://i.imgur.com/3OWpBdz.png")
 fading_tile = simplegui.load_image("https://i.imgur.com/PVUDDTX.png")
@@ -43,14 +36,16 @@ door = simplegui.load_image("https://i.imgur.com/LTDnVZQ.png")
 ghost_image = simplegui.load_image("https://i.imgur.com/dv9AV9m.png")
 explosion_image = simplegui.load_image("https://i.imgur.com/Ja5TmQw.png")
 
+sound_track = simplegui.load_sound("https://www.dropbox.com/s/i5ylmjzpa1qermj/267396_setuniman_hurry-1l50.ogg?dl=1")
 foot_step = simplegui.load_sound("https://www.dropbox.com/s/a7r90i20iotauhn/234263__fewes__footsteps-wood.ogg?dl=1")
 gravity_change = simplegui.load_sound("https://www.dropbox.com/s/hlxiq7zifgyj5xu/204452__ludist__necro-winde.mp3?dl=1")
-ouch = simplegui.load_sound("https://www.dropbox.com/s/keqkj2q5wxred30/234039__11linda__pain-ouch.mp3?dl=1")
 coin_sound = simplegui.load_sound("https://www.dropbox.com/s/xvmjhgv8tq9hdw2/140382__d-w__coins-01.ogg?dl=1")
 door_opened = simplegui.load_sound("https://www.dropbox.com/s/0vrb1uxnoxxetfy/275184__lennyboy__dooropened.ogg?dl=1")
 explosion_sound = simplegui.load_sound("https://www.dropbox.com/s/yeptor14ief3l27/123235__dj-chronos__explosion-2.ogg?dl=1")
+dead_sound = simplegui.load_sound("https://www.dropbox.com/s/edny7imkd7d45n0/319998_manuts_death-5.ogg?dl=1")
+click_sound = simplegui.load_sound("https://www.dropbox.com/s/1a6co2hom5mlozr/39562_the-bizniss_mouse-click.ogg?dl=1")
+win_sound = simplegui.load_sound("https://www.dropbox.com/s/10z51efez439k05/177120_rdholder_2dogsound-tadaa1-3s-2013jan31-cc-b.ogg?dl=1")
 
-# Distance 
 def dist(p,q):
     return math.sqrt((p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2)
 
@@ -79,10 +74,7 @@ class Character:
         self.points = 0
         self.dead = False
         self.dead_count = 0
-        
-        # The draw_size and size are swapped
-        # Fix this afterward!
-        
+
     def get_draw_size(self):
         return self.draw_size
         
@@ -194,16 +186,13 @@ class Character:
         
             gravity_constant = 2.0 / 6.0
         
-            # Remember to reimplement the horizontal collision like the vertical one
-            # (Using 2 row checks)
             column = (int)(camera.track[0] / 50.0)
             row = (int)(self.pos[1] / 50.0)
             row_check1 = (int)( (self.pos[1] + self.draw_size[1] / 2 - 5) / 50.0 )
             row_check2 = (int)( (self.pos[1] - self.draw_size[1] / 2 + 5) / 50.0 )
             column_check1 = (int)( (camera.track[0] + self.draw_size[0]/2 - 10) / 50.0 )
             column_check2 = (int)( (camera.track[0] - self.draw_size[0]/2 + 10) / 50.0 )
-            
-            # Check level
+
             if self.level == 0:
                 grid = stage1.get_info()
             elif self.level == 1:
@@ -213,12 +202,10 @@ class Character:
             else:
                 grid = stage4.get_info()
     
-            # For some reason doesn't work if space is press when character in the last grid
             if self.pos[1] < 0 or self.pos[1] > 600:
+                dead_sound.play()
                 self.reset()
             
-            # This row check is actually not necessary after implementing scroller
-            # Fix this after the game is finished, if time is available
             if row > 0 and row < 11 and column > -1 and column_check2 > -1:
                 if self.check == 'Down':
                     if grid[row + 1][column_check1] == 'W' and (row + 1) * 50 - self.pos[1] <= self.draw_size[1]/2.0:
@@ -240,8 +227,7 @@ class Character:
                     elif grid[row + 1][column_check2] == 'N' and (row + 1) * 50 - self.pos[1] <= (self.draw_size[1] - 10)/2.0:
                         self.dead = True
                     else:
-                        self.vel[1] += gravity_constant
-                    
+                        self.vel[1] += gravity_constant 
                     if column > 0:
                         if grid[row][column + 1] == 'W' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= self.draw_size[0]/2.0:
                             self.vel[0] = 0
@@ -252,10 +238,8 @@ class Character:
                         elif grid[row][column - 1] == 'T' and self.vel[0] < 0 and camera.track[0] - column * 50 <= (self.draw_size[0] - 10)/2.0:
                             self.dead = True
                         elif grid[row][column + 1] == 'N' and self.vel[0] > 0 and (column+1)*50 - camera.track[0] <= (self.draw_size[0] - 10)/2.0:
-                            ouch.play()
                             self.dead = True
                         elif grid[row][column - 1] == 'N' and self.vel[0] < 0 and camera.track[0] - column * 50 <= (self.draw_size[0] - 10)/2.0:
-                            ouch.play()
                             self.dead = True
                             
                 elif self.check == 'Up':
@@ -272,8 +256,7 @@ class Character:
                     elif grid[row - 1][column_check1] == 'R' and self.pos[1] - row * 50 <= (self.draw_size[1] - 20)/2.0:
                         self.dead = True
                     elif grid[row - 1][column_check2] == 'R' and self.pos[1] - row * 50 <= (self.draw_size[1] - 20)/2.0:
-                        self.dead = True
-                        
+                        self.dead = True                        
                     else:
                         self.vel[1] -= gravity_constant
                     if column > 0:
@@ -287,6 +270,7 @@ class Character:
                             self.dead = True
 
         else:
+            dead_sound.play()
             self.check = 'Down'
             self.fly = True
             self.dead_count = self.dead_count + 1
@@ -303,7 +287,6 @@ class Character:
                             
     def reverse_gravity(self):
         if self.pos[1] > 40 and self.pos[1] < (600 - 40):
-        # An attempt to solve the problem of pressing space in the last vertical grids. It fails. FIX!
             if self.check == 'Down' and self.fly == False:
                 self.vel[1] = 0
                 self.check = 'Up'
@@ -353,8 +336,7 @@ class Character:
                 foot_step.play()
             else:
                 foot_step.rewind()
-        
-    # Collision check, only used for monsters        
+                
     def collide(self, other_object):
         if dist(camera.track, other_object.get_position()) <= 60:
             self.dead = True
@@ -362,8 +344,7 @@ class Character:
         else:
             return False
 
-# Class for scroller, check if possible to see why the screen seems buggy when scroller is used  
-# Main idea: Drawing new screen constantly instead of actually moving the character
+# Class for scroller
 class Camera:
     def __init__(self):
         self.pos = [0, 0]
@@ -385,13 +366,11 @@ class Stage:
         self.coin_count = 0
         self.needle_count = 0
         self.flame_count = 0
-        
         self.enemy_group = enemy_group
         self.goal_group = goal_group
         self.coin_group = coin_group
         self.block_group = set()
         self.moving_group = set()
-        
         for i in range(12):
             for j in range(len(self.level_info[1])):
                 if self.level_info[i][j] == 'F':
@@ -420,11 +399,10 @@ class Stage:
         self.block_group = set()
         self.coin_group = set()
         self.moving_group = set()
-        
         for i in range(12):
             for j in range(len(self.level_info[1])):
                 if self.level_info[i][j] == 'F':
-                    block = Blocks([25 + 50 * j, 25 + 50 * i], tile)
+                    block = Blocks([25 + 50 * j, 25 + 50 * i], fading_tile)
                     self.block_group.add(block)
                 elif self.level_info[i][j] == 'C':
                     new_coin = Coin([25 + 50 * j, 25 + 50 * i], coin_image, [16, 16], [32, 32])
@@ -451,17 +429,13 @@ class Stage:
                     self.moving_group.add(moving_block)
         
     def draw(self, canvas):
-        
         canvas.draw_image(background, [800, 600], [1600, 1200], [WIDTH/2, HEIGHT/2], [WIDTH, HEIGHT])
-
         for enemy in self.enemy_group:
             if enemy.track[0] > camera.pos[0] and enemy.track[0] < camera.pos[0] + 900:
                 enemy.draw(canvas)
-                char.collide(enemy)
-            
+                char.collide(enemy)   
         for goal in self.goal_group:
-            goal.draw(canvas)
-            
+            goal.draw(canvas)    
         for coin in self.coin_group:
             if coin.track[0] > camera.pos[0] and coin.track[0] < camera.pos[0] + 900:
                 coin.draw(canvas)
@@ -470,22 +444,18 @@ class Stage:
                     coin_sound.rewind()
                     coin_sound.play()
                     char.coins += 1
-        
         for blockidx in self.block_group:
             if blockidx.track[0] > camera.pos[0] and blockidx.track[0] < camera.pos[0] + 900:
                 blockidx.draw(canvas)
                 if blockidx.collide() and blockidx.block_type == 'Fading':
-                    self.block_group.discard(blockidx)
-                    
+                    self.block_group.discard(blockidx)            
         for moving_block in self.moving_group:
             moving_block.draw(canvas)
             moving_block.collide()
-        
-        # Basically two timers for animation    
+           
         self.coin_count = (self.coin_count + 1) % (8 * 10)
         self.needle_count = (self.needle_count + 1) % (2 * 8)
         self.flame_count = (self.flame_count + 1) % (7 * 13)
-        
         
         for i in range(12):
             for j in range(camera.left_bound, camera.right_bound +2):
@@ -499,15 +469,13 @@ class Stage:
                     if self.needle_count < 8:
                         canvas.draw_image(needle_trap, [369/2.0, 369/2.0], [369, 369], [camera.draw_pos[0]+ 50 * (j-camera.left_bound), 25 + 50 * i], [50, 50])
                     else:
-                        canvas.draw_image(needle_trap_2, [369/2.0, 369/2.0], [369, 369], [camera.draw_pos[0]+ 50 * (j-camera.left_bound), 25 + 50 * i], [50, 50])
-                    
-        # Report the number of coins earned
+                        canvas.draw_image(needle_trap_2, [369/2.0, 369/2.0], [369, 369], [camera.draw_pos[0]+ 50 * (j-camera.left_bound), 25 + 50 * i], [50, 50])             
+
         canvas.draw_text('x '+str(char.coins), [50, 50], 40, 'Red', 'sans-serif')
         canvas.draw_image(coin_image, [16, 16], [32, 32], [25, 40], [70, 70])
         canvas.draw_text('x '+str(char.lives), [700, 50], 40, 'Red', 'sans-serif')
         canvas.draw_image(character, [32 + 64 * 2, 32 + 64 * 14], [64, 64], [675, 35], [80, 80]) 
-        
-    # Return the matrix, used by the Character class to check collision with blocks    
+   
     def get_info(self):
         return self.level_info
     
@@ -530,12 +498,9 @@ class Enemy:
         self.fly = False
         self.walk_track = 0
         self.fly_track = 0
-        
-    # Fix the case self.check = 'Up'
-    # Change the variables self.pos -> self.draw_pos, swap draw_size and size
+
     def draw(self, canvas):
         self.update()
-        
         if self.check == 'Down':
             if self.fly == True and self.walk_right == True:
                 self.walk_track = (self.walk_track + 2) % (7 * 2)
@@ -610,7 +575,6 @@ class Enemy:
         self.fly = True
         
     def update(self):
-        # Timer for animation
         self.counter = (self.counter + 1) % 360
         if self.move_type == 'horizontal':
             if self.counter < 180:
@@ -627,15 +591,11 @@ class Enemy:
             else:
                 self.stop()
                 self.fly_down()
-        
-        # Only visible when in the same frame with the character
         self.track[0] = self.track[0] + self.vel[0]
         self.track[1] = self.track[1] + self.vel[1]
         self.draw_pos[0] = self.track[0] - camera.pos[0] 
         self.draw_pos[1] = self.track[1]
-     
-    # Not the same as get_position() for Character class
-    # This method returns the actual position, not the position on the frame
+
     def get_position(self):
         return self.track
 
@@ -670,30 +630,19 @@ class Menu:
         self.needle_count = 0
         self.enemy_count = 0
         self.char_count = 0 
-        
-        # The start 'button'
         self.start_button_horizontal = [4 * 25, 27 * 25]
         self.start_button_vertical = [2 * 25, 11 * 25]
-        
-        # How to play 'button'
         self.howto_button_horizontal = [1 * 25, 23 * 25]
         self.howto_button_vertical = [13 * 25, 16 * 25]
-        
-        # High score 'button'
         self.high_button_horizontal = [15 * 25, 28 * 25]
         self.high_button_vertical = [18 * 25, 21 * 25]
         
-    def draw(self, canvas):
-        # Again, timers for animation 
+    def draw(self, canvas): 
         self.coin_count = (self.coin_count + 1) % (8 * 10)
         self.needle_count = (self.needle_count + 1) % (2 * 9)
         self.enemy_count = (self.enemy_count + 1) % (10 * 6)
         self.char_count = (self.char_count + 1) % (10 * 9)
-        
-        # Draw background
         canvas.draw_image(background, [800, 600], [1600, 1200], [WIDTH/2, HEIGHT/2], [WIDTH, HEIGHT])
-        
-        # Mimic the draw method of Stage class
         for i in range(24):
             for j in range(31):
                 if self.splash_screen[i][j] == 'W':
@@ -704,32 +653,30 @@ class Menu:
                     else:
                         canvas.draw_image(needle_trap_2, [369/2.0, 369/2.0], [369, 369], [12.5 + 25 * j, 12.5 + 25 * i], [25, 25])
                 elif self.splash_screen[i][j] == 'C':
-                    canvas.draw_image(coin_image, [16, 16 + (self.coin_count / 10) * 32], [32, 32], [12.5 + 25 * j, 12.5 + 25 * i], [38, 38])
-                    
+                    canvas.draw_image(coin_image, [16, 16 + (self.coin_count / 10) * 32], [32, 32], [12.5 + 25 * j, 12.5 + 25 * i], [38, 38])                    
         canvas.draw_image(ghost_image, [32 + (self.enemy_count / 10) * 64, 32 + 15 * 64], [64, 64], [10 * 25, 9 * 25], [50, 50])
         canvas.draw_image(character, [32 + (self.char_count / 10) * 64, 32 + 10 * 64], [64, 64], [15 * 25, 25], [50, 50])
-
-    # Check if one of the Menu's buttons is clicked
+        
     def click(self, pos):
         global started, howto, high_score
         if started == False and howto == False and high_score == False:
             if pos[0] > self.start_button_horizontal[0] and pos[0] < self.start_button_horizontal[1]:
                 if pos[1] > self.start_button_vertical[0] and pos[1] < self.start_button_vertical[1]:
+                    click_sound.play()
                     started = True
-                    char.coins = 0
-            
+                    char.coins = 0            
             if pos[0] > self.howto_button_horizontal[0] and pos[0] < self.howto_button_horizontal[1]:
                 if pos[1] > self.howto_button_vertical[0] and pos[1] < self.howto_button_vertical[1]:
-                    howto = True
-                    
+                    click_sound.play()
+                    howto = True                    
             if pos[0] > self.high_button_horizontal[0] and pos[0] < self.high_button_horizontal[1]:
                 if pos[1] > self.high_button_vertical[0] and pos[1] < self.high_button_vertical[1]:
+                    click_sound.play()
                     high_score = True
                                        
 # How to play
 class Instructions:
     def __init__(self):
-
         self.button_horizontal = [600, 600 + 113]
         self.button_vertical = [50, 50 + 83]
         self.button_pos = [(self.button_horizontal[0] + self.button_horizontal[1]) / 2.0,
@@ -746,8 +693,7 @@ class Instructions:
         global howto
         if pos[0] > self.button_horizontal[0] and pos[0] < self.button_horizontal[1]:
             if pos[1] > self.button_vertical[0] and pos[1] < self.button_vertical[1]:
-                howto = False
-                
+                howto = False                
 # High score                
 class Hall_of_fame:
     def __init__(self):
@@ -775,9 +721,7 @@ class Hall_of_fame:
                              '                                ',
                              '                                ',
                              '                                ']
-
         self.names = {}
-        
         self.button_horizontal = [650, 650 + 113]
         self.button_vertical = [25, 25 + 83]
         self.button_pos = [(self.button_horizontal[0] + self.button_horizontal[1]) / 2.0,
@@ -793,21 +737,20 @@ class Hall_of_fame:
         for i in range(24):
             for j in range(31):
                 if self.splash_screen[i][j] == 'W':
-                    canvas.draw_image(tile, [125, 125], [250, 250], [12.5 + 25 * j, 12.5 + 25 * i], [25, 25])
-                    
+                    canvas.draw_image(tile, [125, 125], [250, 250], [12.5 + 25 * j, 12.5 + 25 * i], [25, 25])            
         self.count = 0
         for key in self.names:
             self.count += 1
             canvas.draw_text(str(self.count) + '. ' + key, 
                              [4 * 25, (14 + self.count) * 25], 20, 'Black', 'sans-serif') 
             canvas.draw_text(str(self.names[key]), [20 * 25, (14 + self.count) * 25], 20, 
-                             'Black', 'sans-serif')
-        
+                             'Black', 'sans-serif')   
     def click(self, pos):
         global high_score
         if pos[0] > self.button_horizontal[0] and pos[0] < self.button_horizontal[1]:
             if pos[1] > self.button_vertical[0] and pos[1] < self.button_vertical[1]:
                 high_score = False
+                click_sound.play()
 
 # The goal of each stage
 class Door:
@@ -832,16 +775,15 @@ class Door:
     def draw(self, canvas):
         global pause
         self.update()
-        
         if self.collide():
-            # Timer for 'door opening' animation
-            # Only happens when the character are standing in front of the door
+            win_sound.play()
             door_opened.play()
             self.count = (self.count + 1) % (3 * 10)
             canvas.draw_image(self.image, [32 + 4 * 64, 32 + (int)(self.count/10) * 64], self.image_size, 
                               self.draw_pos, self.draw_size)
-            
-            # Go to the next level after door is opened
+            char.coins += 1
+            coin_sound.rewind()
+            coin_sound.play()
             if self.count == 2 * 10 + 2:
                 if char.level < 3:
                     char.level += 1
@@ -851,12 +793,10 @@ class Door:
                 else:
                     end_game = True
                     end.name = ""
-                self.count = 0
-                
+                self.count = 0    
         else:
             canvas.draw_image(self.image, [32 + 4 * 64, 32], self.image_size, 
                               self.draw_pos, self.draw_size)
-
 # Obtainable objects            
 class Coin:
     def __init__(self, track, image, center, size):
@@ -920,8 +860,7 @@ class Blocks:
                 if self.move_type == 'Left':
                     self.move_right()
                 else:
-                    self.move_left()
-                    
+                    self.move_left()        
             self.track[0] += self.vel[0]
             self.horizontal = [self.track[0] - 25, self.track[0] + 25]
             self.vertical = [self.track[1] - 25, self.track[1] + 25]
@@ -929,10 +868,8 @@ class Blocks:
     def collide(self):
         left_check = camera.track[0] - self.char_size[0]/2.0 
         right_check = camera.track[0] + self.char_size[0]/2.0
-        
         up_check = camera.track[1] - self.char_size[1]/2.0
         down_check = camera.track[1] + self.char_size[1]/2.0
-        
         if char.check == 'Down':
             if left_check > self.horizontal[0] - self.char_size[0] + 5 and right_check < self.horizontal[1] + self.char_size[0] - 5:
                 if down_check >= self.vertical[0] and up_check < self.vertical[0]:
@@ -941,7 +878,6 @@ class Blocks:
                     char.fly = False
                     char.fly_track = 0
                     return True
-                
             if self.block_type != 'Moving':    
                 if (up_check < self.vertical[1] and down_check > self.vertical[1]) or (down_check > self.vertical[0] and up_check < self.vertical[0]):
                     if char.vel[0] < 0 and left_check <= self.horizontal[1] and right_check >= self.horizontal[1]:
@@ -956,8 +892,7 @@ class Blocks:
                     char.pos[1] = self.vertical[1] + self.char_size[1] / 2.0
                     char.fly = False
                     char.fly_track = 0
-                    return True
-                
+                    return True    
             if self.block_type != 'Moving':    
                 if (up_check < self.vertical[1] and down_check > self.vertical[1]) or (down_check > self.vertical[0] and up_check < self.vertical[0]):
                     if char.vel[0] < 0 and left_check <= self.horizontal[1] and right_check >= self.horizontal[1]:
@@ -1030,8 +965,7 @@ class Ghost:
             
         else:
             if self.count > 2 * 8 * 7 + 15 * 2 and self.count < 2 * 8 * 7 + (48 - 10) * 2:
-                self.boom = True
-                
+                self.boom = True    
             canvas.draw_image(self.expimg, [256/2 + 256 * ((self.count - 2 * 8 * 7)/2), 256/2], [256, 256],
                               self.draw_pos, [320, 320])
             
@@ -1061,25 +995,17 @@ class Pause:
                              '      C  C   C      T TT T T    ',
                              '      C  CC CC      T  T TTT    ',
                              '                                ']
-        
         self.coin_count = 0
         self.flame_count = 0
-        
         self.yes_horizontal = [7 * 25, (7 + 6) * 25]
         self.yes_vertical = [13 * 25, 19 * 25]
-        
         self.no_horizontal = [20 * 25, 26 * 25]
         self.no_vertical = [13 * 25, 19 * 25]
         
-    def draw(self, canvas):
-        # Again, timers for animation 
+    def draw(self, canvas): 
         self.coin_count = (self.coin_count + 1) % (8 * 10)
         self.flame_count = (self.flame_count + 1) % (7 * 13)
-        
-        # Draw background
         canvas.draw_image(background, [800, 600], [1600, 1200], [WIDTH/2, HEIGHT/2], [WIDTH, HEIGHT])
-        
-        # Mimic the draw method of Stage class
         for i in range(24):
             for j in range(31):
                 if self.splash_screen[i][j] == 'W':
@@ -1087,8 +1013,7 @@ class Pause:
                 elif self.splash_screen[i][j] == 'T':
                     canvas.draw_image(fire_trap, [256/2 + (self.flame_count/7) * 256, 256/2], [256, 256], [12.5 + 25 * j, 12.5 + 25 * i], [25, 25])
                 elif self.splash_screen[i][j] == 'C':
-                    canvas.draw_image(coin_image, [16, 16 + (self.coin_count / 10) * 32], [32, 32], [12.5 + 25 * j, 12.5 + 25 * i], [38, 38])
-                    
+                    canvas.draw_image(coin_image, [16, 16 + (self.coin_count / 10) * 32], [32, 32], [12.5 + 25 * j, 12.5 + 25 * i], [38, 38])            
         canvas.draw_image(character, [32 + 2 * 64, 32 + 20 * 64], [64, 64], [10 * 25, 16 * 25], [80, 80])
         canvas.draw_image(character, [32 + 5 * 64, 32 + 20 * 64], [64, 64], [23 * 25, 16 * 25], [80, 80])
                     
@@ -1096,10 +1021,11 @@ class Pause:
         global started, pause
         if pos[0] > self.yes_horizontal[0] and pos[0] < self.yes_horizontal[1]:
             if pos[1] > self.yes_vertical[0] and pos[1] < self.yes_vertical[1]:
-                pause = False
-                
+                click_sound.play()
+                pause = False        
         elif pos[0] > self.no_horizontal[0] and pos[0] < self.no_horizontal[1]:
             if pos[1] > self.no_vertical[0] and pos[1] < self.no_vertical[1]:
+                click_sound.play()
                 pause = False
                 started = False
                 char.reset()
@@ -1131,8 +1057,7 @@ class Endgame:
                              '                                ',
                              '                                ',
                              '                                ',
-                             '                                ']
-        
+                             '                                ']        
     def draw(self, canvas):
         canvas.draw_image(background, [800, 600], [1600, 1200], [WIDTH/2, HEIGHT/2], [WIDTH, HEIGHT])
         for i in range(24):
@@ -1159,13 +1084,18 @@ class Endgame:
     def click(self, pos):
         global started, end_game, name_entered
         if pos[0] > 0 and pos[0] < 800 and pos[1] > 0 and pos[1] < 600:
+            click_sound.play()
             started = False
             end_game = False
             name_entered = False
-            
 
-# Storing the matrix for each stage
+class Loop_track:
+    def __init__(self, sound):
+        self.sound = sound
 
+    def update(self):
+        self.sound.play()      
+        
 # Stage 1
 level1_matrix = ['WWWWWWWWWWW WWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
                  'WWWWWWWWWWW WWWWW  WWWCCCCCWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
@@ -1176,7 +1106,7 @@ level1_matrix = ['WWWWWWWWWWW WWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWW
                  'W              CCCC                                                          WWWWWWWWW',
                  'W                                      CCC       V                           WWWWWWWWW',
                  'W         WWW                         WCW                                    WWWWWWWWW',
-                 'W         WWW     TTT        NNN      WWW                 CCCCC H            WWWWWWWWW',
+                 'W         WWW     TT         NNN      WWW                 CCCCC H            WWWWWWWWW',
                  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
                  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW']
 
@@ -1208,7 +1138,6 @@ level3_matrix = ['WWWWWWWWWWWFFFWWWWWWWW                                        
                  'WWWWWWWWWWWWWWWWWWWWWWW                                                                                                  WWWW',
                  'W                                                                                                                        WWWW']
                  
-
 # Stage 4
 level4_matrix = ['WW                    WWWWWWFFFFF                         WWWWWWWWWWWWWWWWWWWWWWWWWWWW                        B                WWWWWW',
                  'WW                       CCCCCC                           WWWWWWWWW WWWWW WWWWW WWWW                                  LLL      WWWWWW',
@@ -1216,7 +1145,7 @@ level4_matrix = ['WW                    WWWWWWFFFFF                         WWWW
                  'WW                       CCCC                             WWW      VCCCCCVCCCCCVCCCCV                         B                WWWWWW',
                  'WW                         CCCC                           WWW                                                 B                WWWWWW',
                  '                                                          WWW      V     V     V    V                                          WWWWWW',
-                 '                                                      LLL                                                                      WWWWWW',
+                 '                                                  LLLLLLL                                                                      WWWWWW',
                  '                                                                                                              B                WWWWWW',
                  '                                                                                                              B           BB   WWWWWW',
                  '                      BBBBBBBBBBBB                                   NN    NN    N       FFFFFFFFFFFFFF FFFFFFF                WWWWWW',
@@ -1240,30 +1169,24 @@ enemy_group2 = set([enemy2, enemy3, enemy4, enemy5])
 # Goal for the first stage
 goal = Door([71 * 50 + 25, 460], door, [32, 32], [64, 64])
 goal_group = set([goal])
-
 # Goal for the second stage
 goal2 = Door([133 * 50 + 25, 510], door, [32, 32], [64, 64])
 goal_group2 = set([goal2])
-
 # Goal for third stage
-goal3 = Door([128 * 50, 410], door, [32, 32], [64, 64])
+goal3 = Door([118 * 50, 410], door, [32, 32], [64, 64])
 goal_group3 = set([goal3])
-
 # Goal for the last stage
 goal4 = Door([126 * 50, 360], door, [32, 32], [64, 64])
 goal_group4 = set([goal4])
 
-# Enemies and other objects are encoded directly into the level matrix at this point!
-
-# Other unique objects (unique as in only one)
 camera = Camera()
 menu = Menu()
 instruct = Instructions()
 hall = Hall_of_fame()
 pause_menu = Pause()
 end = Endgame()
-
 ghost = Ghost([0, 0], ghost_image, explosion_image)
+track = Loop_track(sound_track)
 
 # Initialize the stages
 stage1 = Stage(level1_matrix, set(), goal_group, enemy_group)
@@ -1300,6 +1223,7 @@ def button_handler():
     
 def draw_handler(canvas):
     global stage1, stage2
+    track.update()
     if not started:
         if howto == False and high_score == False:
             menu.draw(canvas)
@@ -1317,16 +1241,12 @@ def draw_handler(canvas):
             camera.update()
             if char.get_level() == 0:
                 stage1.draw(canvas)
-            
             elif char.get_level() == 1:
                 stage2.draw(canvas)
-            
             elif char.get_level() == 2:
                 stage3.draw(canvas)
-                
             else:
                 stage4.draw(canvas)
-
             char.update()
             if not char.dead:
                 char.draw(canvas)
@@ -1337,7 +1257,6 @@ def draw_handler(canvas):
             if ghost.collide():
                 char.dead = True
     
-# Get things rolling
 frame = simplegui.create_frame("Gravity", WIDTH, HEIGHT)
 frame.set_draw_handler(draw_handler)
 frame.set_keyup_handler(keyup_handler)
