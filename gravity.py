@@ -27,6 +27,7 @@ name_entered = False
 
 background = simplegui.load_image("https://i.imgur.com/sdfuQ6n.jpg")
 tile = simplegui.load_image("https://i.imgur.com/3OWpBdz.png")
+fading_tile = simplegui.load_image("https://i.imgur.com/PVUDDTX.png")
 fire_trap = simplegui.load_image("http://i.imgur.com/XYMZwba.png")
 reverse_fire = simplegui.load_image("https://i.imgur.com/iBwpsgi.png")
 character = simplegui.load_image("https://i.imgur.com/XaMlNCf.png")
@@ -394,7 +395,7 @@ class Stage:
         for i in range(12):
             for j in range(len(self.level_info[1])):
                 if self.level_info[i][j] == 'F':
-                    block = Blocks([25 + 50 * j, 25 + 50 * i], tile)
+                    block = Blocks([25 + 50 * j, 25 + 50 * i], fading_tile)
                     self.block_group.add(block)
                 elif self.level_info[i][j] == 'C':
                     new_coin = Coin([25 + 50 * j, 25 + 50 * i], coin_image, [16, 16], [32, 32])
