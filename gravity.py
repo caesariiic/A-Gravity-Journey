@@ -1,8 +1,8 @@
-# A Gravity Journey
+# A Gravity Journey by Anh Tran
 # Ver 8
 # Pitch sheet: https://www.dropbox.com/s/9w9kt91q2poq7yd/gravity_pitch_sheet.pdf?dl=0
 
-# CodeSkulptor link: http://www.codeskulptor.org/#user40_T4L9jBPKx1_2.py
+# CodeSkulptor link: http://www.codeskulptor.org/#user40_caqRkp02OL_4.py
 
 import simplegui
 import random
@@ -16,6 +16,7 @@ high_score = False
 pause = False
 end_game = False
 name_entered = False
+ghost_check = True
 
 # Images and sprite sheets 
 background = simplegui.load_image("https://i.imgur.com/sdfuQ6n.jpg")
@@ -29,7 +30,7 @@ needle_trap = simplegui.load_image("https://i.imgur.com/qIO2WTx.png")
 needle_trap_2 = simplegui.load_image("https://i.imgur.com/NvHVydF.png")
 enemy_image = simplegui.load_image("https://i.imgur.com/sRswcw1.png")
 coin_image = simplegui.load_image("http://i.imgur.com/tjrkrQ7.png")
-instructions = simplegui.load_image("https://i.imgur.com/gTqFZwz.png")
+instructions = simplegui.load_image("https://i.imgur.com/I2oE64i.png")
 back_button = simplegui.load_image("https://i.imgur.com/yX0qR9m.png")
 hall_of_fame = simplegui.load_image("https://i.imgur.com/kHV9iIm.jpg")
 door = simplegui.load_image("https://i.imgur.com/LTDnVZQ.png")
@@ -284,6 +285,8 @@ class Character:
                 self.reset()
                 if self.level == 2:
                     stage3.soft_reset()
+                elif self.level == 3:
+                    stage4.soft_reset()
                             
     def reverse_gravity(self):
         if self.pos[1] > 40 and self.pos[1] < (600 - 40):
@@ -338,7 +341,7 @@ class Character:
                 foot_step.rewind()
                 
     def collide(self, other_object):
-        if dist(camera.track, other_object.get_position()) <= 60:
+        if dist(camera.track, other_object.get_position()) <= 45:
             self.dead = True
             return True
         else:
@@ -615,14 +618,14 @@ class Menu:
                              '    WWWWWWWWWWWWWWWWWWWWWWW     ',
                              '                                ',
                              '                                ',
-                             ' N N NNN N N N  NNN NNN         ',
+                             ' N N  N  N N N  NNN  N          ',
                              ' NNN N N N N N   N  N N         ',
-                             ' N N NNN  N N    N  NNN         ',
+                             ' N N  N   N N    N   N          ',
                              '                                ',
                              '                                ',
-                             '               C C C CC  C C    ',
-                             '               CCC C C C CCC    ',
-                             '               C C C CCC C C    ',
+                             '               WCWCWCWWCCWCW    ',
+                             '               WWWCWCWCWCWWW    ',
+                             '               WCWCWCWWWCWCW    ',
                              '                                ',
                              '                                ',
                              '                                ']
@@ -664,6 +667,7 @@ class Menu:
                 if pos[1] > self.start_button_vertical[0] and pos[1] < self.start_button_vertical[1]:
                     click_sound.play()
                     started = True
+                    char.level = 0
                     char.coins = 0            
             if pos[0] > self.howto_button_horizontal[0] and pos[0] < self.howto_button_horizontal[1]:
                 if pos[1] > self.howto_button_vertical[0] and pos[1] < self.howto_button_vertical[1]:
@@ -685,7 +689,7 @@ class Instructions:
         self.button_height = self.button_vertical[1] - self.button_vertical[0]
         
     def draw(self, canvas):
-        canvas.draw_image(instructions, [2133/2.0, 600], [2133, 1200], [WIDTH/2, HEIGHT/2], [WIDTH, HEIGHT])
+        canvas.draw_image(instructions, [1067/2.0, 300], [1067, 600], [WIDTH/2, HEIGHT/2], [WIDTH, HEIGHT])
         canvas.draw_image(back_button, [113/2.0, 83/2.0], [113, 83], self.button_pos, 
                           [self.button_width, self.button_height])
         
@@ -722,6 +726,7 @@ class Hall_of_fame:
                              '                                ',
                              '                                ']
         self.names = {}
+        self.scores = []
         self.button_horizontal = [650, 650 + 113]
         self.button_vertical = [25, 25 + 83]
         self.button_pos = [(self.button_horizontal[0] + self.button_horizontal[1]) / 2.0,
@@ -739,11 +744,12 @@ class Hall_of_fame:
                 if self.splash_screen[i][j] == 'W':
                     canvas.draw_image(tile, [125, 125], [250, 250], [12.5 + 25 * j, 12.5 + 25 * i], [25, 25])            
         self.count = 0
-        for key in self.names:
+        self.scores.sort(reverse = True)
+        for score in self.scores:
             self.count += 1
-            canvas.draw_text(str(self.count) + '. ' + key, 
+            canvas.draw_text(str(self.count) + '. ' + self.names[score], 
                              [4 * 25, (14 + self.count) * 25], 20, 'Black', 'sans-serif') 
-            canvas.draw_text(str(self.names[key]), [20 * 25, (14 + self.count) * 25], 20, 
+            canvas.draw_text(str(score), [20 * 25, (14 + self.count) * 25], 20, 
                              'Black', 'sans-serif')   
     def click(self, pos):
         global high_score
@@ -936,11 +942,11 @@ class Ghost:
         
     def collide(self):
         if not self.boom:
-            if dist(self.track, camera.track) <= 50:
+            if dist(self.track, camera.track) <= 45:
                 return True
             return False
         else:
-            if dist(self.track, camera.track) <= 120:
+            if dist(self.track, camera.track) <= 105:
                 return True
             return False
     
@@ -1075,11 +1081,12 @@ class Endgame:
     def key_handler(self, key):
         global name_entered
         if not name_entered:
-            if key > 64 and key < 91:
+            if key > 47 and key < 91:
                 self.name += chr(key)
             elif key == 13:
                 name_entered = True
-                hall.names[self.name] = char.coins
+                hall.names[char.coins] = self.name
+                hall.scores.append(char.coins)
     
     def click(self, pos):
         global started, end_game, name_entered
@@ -1104,9 +1111,9 @@ level1_matrix = ['WWWWWWWWWWW WWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWW
                  'W                                                                            WWWWWWWWW',
                  'W                                                                            WWWWWWWWW',
                  'W              CCCC                                                          WWWWWWWWW',
-                 'W                                      CCC       V                           WWWWWWWWW',
-                 'W         WWW                         WCW                                    WWWWWWWWW',
-                 'W         WWW     TT         NNN      WWW                 CCCCC H            WWWWWWWWW',
+                 'W                                V     CCC       V                           WWWWWWWWW',
+                 'W       V WWW                         WCW                                    WWWWWWWWW',
+                 'W         WWW     TT  H      NNN      WWW                 CCCCC H            WWWWWWWWW',
                  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
                  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW  WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW']
 
@@ -1115,14 +1122,14 @@ level2_matrix = ['WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWWWW
                  'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW                     WWWWWWW  WWWWWWW    WW  WC  WWC WWC  WWC                CC           WWWWWWWWWWWWWWWWW',
                  'WWWWWWWWWWWWWWWW                   WW  WW  WW  WW W                       CC      C       CC       CCCCC                               WWWWW',
                  'W             WW                                                                               WWWWWWFFWWWWWWWWWFWWWWWWW               WWWWW',
-                 'W             WW          C                                                     CCC              RRRR  RR  RR   R  RRR      WWW        WWWWW',
+                 'W             WW         CCC                                                    CCC              RRRR  RR  RR   R  RRR      WWW        WWWWW',
                  'W                        FFF                                WWW             WW  FFF  FF WW FF                                          WWWWW',
-                 'W                                        CCCC               WCW                      CC CC             CCCC    CCCC                    WWWWW',
+                 'W                                        CCCC               WCW    V                 CC CC             CCCC    CCCC                    WWWWW',
                  'W        WWW                                                WCW                                    CCCC    CCCC    CCCC                WWWWW',
-                 'W                                   WWFFWWW  FWF  WWW                                                                      CCCC        WWWWW',
-                 'W       NNNNNN          CCC                                      CC                       CCC   NN   NN  NNN  N  NN   NN   TTTT        WWWWW',
-                 'WWWWWWWWWWWWWWWWWWWTTTTWWWWWWWWWW                    WWWWWW   WWWWWFFWW WW   WW  CCW   W  FFF   WWWWWWWWWWWWWWWWWWWWWWWW   WWWW        WWWWW',
-                 'WWWWWWWW     WWWWWWWWWWWWWWW         W   W  W   W   W  WWWW     WWWFFWW          FFW    W                                  WWWWWWWWWWWWWWWWW']
+                 'W       V                        V  WWFFWWW VFWF VWWW                                                                      CCCC        WWWWW',
+                 'W       NNNNNN          HCC                                      CC                       CCC   NN   NN  NNN  N  NN   NN   TTTT        WWWWW',
+                 'WWWWWWWWWWWWWWWWWWWTTTTWWWWWWWWWW                    WWWWWW      CC     WW   WW  CCW   W  FFF   WWWWWWWWWWWWWWWWWWWWWWWW   WWWW        WWWWW',
+                 'WWWWWWWW     WWWWWWWWWWWWWWW         W   W  W   W   W  WWWW    WWWWFFWW          FFW    W                                  WWWWWWWWWWWWWWWWW']
 
 # Stage 3
 level3_matrix = ['WWWWWWWWWWWFFFWWWWWWWW                                                           WWWWFFMM                                WWWW',
@@ -1155,17 +1162,6 @@ level4_matrix = ['WW                    WWWWWWFFFFF                         WWWW
 # Initialize character
 char = Character([150, 460], 100, character, reverse_char, [32, 32 + 64 * 6], [64, 64])
 
-# Enemies for the first stage
-enemy = Enemy([1100, 460], enemy_image, [32, 32], [64, 64], 'horizontal')
-enemy2 = Enemy([400, 400], enemy_image, [32, 32], [64, 64], 'vertical')
-enemy3 = Enemy([1700, 400], enemy_image, [32, 32], [64, 64], 'vertical')
-enemy_group = set([enemy, enemy2, enemy3])
-
-# Additional enemies for the second stage
-enemy4 = Enemy([25 + 24 * 50, 460], enemy_image, [32, 32], [64, 64], 'horizontal')
-enemy5 = Enemy([25 + 42 * 50, 300], enemy_image, [32, 32], [64, 64], 'vertical')
-enemy_group2 = set([enemy2, enemy3, enemy4, enemy5])
-
 # Goal for the first stage
 goal = Door([71 * 50 + 25, 460], door, [32, 32], [64, 64])
 goal_group = set([goal])
@@ -1189,8 +1185,8 @@ ghost = Ghost([0, 0], ghost_image, explosion_image)
 track = Loop_track(sound_track)
 
 # Initialize the stages
-stage1 = Stage(level1_matrix, set(), goal_group, enemy_group)
-stage2 = Stage(level2_matrix, set(), goal_group2, enemy_group2)
+stage1 = Stage(level1_matrix, set(), goal_group, set())
+stage2 = Stage(level2_matrix, set(), goal_group2, set())
 stage3 = Stage(level3_matrix, set(), goal_group3, set())
 stage4 = Stage(level4_matrix, set(), goal_group4, set())
 
@@ -1220,6 +1216,25 @@ def button_handler():
     global started, pause
     if started == True and pause == False:
         pause = True
+        
+def level_button():
+    global pause
+    char.level = (char.level + 1) % 4
+    char.reset()
+    char.coins = 0
+    char.lives += 1
+    pause = False
+    stage1.reset()
+    stage2.reset()
+    stage3.reset()
+    stage4.reset()
+    
+def ghost_turn():
+    global ghost_check
+    if ghost_check:
+        ghost_check = False
+    else:
+        ghost_check = True
     
 def draw_handler(canvas):
     global stage1, stage2
@@ -1253,9 +1268,10 @@ def draw_handler(canvas):
             else:
                 if char.dead_count % 2 == 0:
                     char.draw(canvas)
-            ghost.draw(canvas)
-            if ghost.collide():
-                char.dead = True
+            if ghost_check:
+                ghost.draw(canvas)
+                if ghost.collide():
+                    char.dead = True
     
 frame = simplegui.create_frame("Gravity", WIDTH, HEIGHT)
 frame.set_draw_handler(draw_handler)
@@ -1263,4 +1279,6 @@ frame.set_keyup_handler(keyup_handler)
 frame.set_keydown_handler(keydown_handler)
 frame.set_mouseclick_handler(mouse_click)
 button = frame.add_button('PAUSE', button_handler)
+button2 = frame.add_button('Next Level', level_button)
+button3 = frame.add_button('Ghost on/off', ghost_turn)
 frame.start()
